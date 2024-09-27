@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  sisyphus-db:
+    build: ./sisyphus-db
+    image: sisyphus-db:5.0.0-compose
+    ports:
+     - "3306:3306"
+    volumes:
+      - mydata:/var/lib/mysql
+      - ./sisyphus-db/init:/docker-entrypoint-initdb.d
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256M
+    restart: always
+
+  sisyphus-core:
+    build: ./sisyphus-core
+    image: sisyphus-core:5.0.0-compose
+    ports:
+     - "8080:8080"
+    environment:
+      - DB_URL=sisyphus-db
+      - DB_PORT=3306
+      - DB_NAME=ssdb
+      - DB_USERNAME=myuser
+      - DB_PASSWORD=mypassword
+    depends_on:
+      - sisyphus-db
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 512M
+    restart: on-failure
+
+volumes:
+  mydata:
