@@ -1,0 +1,27 @@
+name: Auto assign
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions: write-all
+
+jobs:
+  auto_add:
+    name: Auto add reviewer and assignee
+    runs-on: ubuntu-latest
+    steps:
+      
+run: |
+        case "$AUTHOR" in
+            immyeong)
+                reviewer="525tea";;
+            525tea)
+                reviewer="immyeong";;
+        esac
+        gh pr edit ${{ github.event.pull_request.number }} --add-assignee "$AUTHOR" --add-reviewer "$reviewer" --repo "$GITHUB_REPOSITORY"
+  env:
+    GH_TOKEN: ${{ secrets.PR_ASSIGN_KEY }}
+    AUTHOR: ${{ github.event.sender.login }}
+    OWNER: ${{ github.repository_owner }}
+    REPO: ${{ github.event.repository.name }}
