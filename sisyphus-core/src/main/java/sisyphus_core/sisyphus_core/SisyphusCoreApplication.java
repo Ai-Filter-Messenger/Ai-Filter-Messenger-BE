@@ -20,12 +20,13 @@ public class SisyphusCoreApplication {
 		SpringApplication.run(SisyphusCoreApplication.class, args);
 	}
 
-	@PostConstruct
+//	@PostConstruct
 	public void postData(){
 		UserRequest.register register1= UserRequest.register.builder()
 				.loginId("test1")
 				.password("1234")
 				.nickname("test1")
+				.email("test1@test.com")
 				.name("test1")
 				.build();
 
@@ -33,6 +34,7 @@ public class SisyphusCoreApplication {
 				.loginId("test2")
 				.password("1234")
 				.nickname("test2")
+				.email("test2@test.com")
 				.name("test2")
 				.build();
 
@@ -40,6 +42,7 @@ public class SisyphusCoreApplication {
 				.loginId("test3")
 				.password("1234")
 				.nickname("test3")
+				.email("test3@test.com")
 				.name("test3")
 				.build();
 

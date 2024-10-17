@@ -28,6 +28,7 @@ public class UserService {
                 .loginId(register.getLoginId())
                 .password(register.getPassword())
                 .nickname(register.getNickname())
+                .email(register.getEmail())
                 .name(register.getName())
                 .describe(" ")
                 .profileImageUrl(defProfileImage)
