@@ -26,14 +26,14 @@ public class UserController {
     }
 
     @PostMapping("/check/loginId")
-    public ResponseEntity<String> checkLoginId(@RequestBody @Valid String loginId){
-        userService.checkDuplicateLoginId(loginId);
+    public ResponseEntity<String> checkLoginId(@RequestBody @Valid UserRequest.check check){
+        userService.checkDuplicateLoginId(check.getLoginId());
         return ResponseEntity.ok("사용 가능한 아이디입니다.");
     }
 
     @PostMapping("/check/nickname")
-    public ResponseEntity<String> checkNickname(@RequestBody @Valid String nickname){
-        userService.checkDuplicateNickname(nickname);
+    public ResponseEntity<String> checkNickname(@RequestBody @Valid UserRequest.check check){
+        userService.checkDuplicateNickname(check.getNickname());
         return ResponseEntity.ok("사용 가능한 닉네임입니다.");
     }
 }

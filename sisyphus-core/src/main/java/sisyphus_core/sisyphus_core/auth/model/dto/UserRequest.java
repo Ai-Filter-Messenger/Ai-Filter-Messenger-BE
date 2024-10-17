@@ -19,4 +19,13 @@ public class UserRequest {
         private String describe;
         private String profileImageUrl;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class check{
+        private String loginId;
+        private String nickname;
+    }
 }
