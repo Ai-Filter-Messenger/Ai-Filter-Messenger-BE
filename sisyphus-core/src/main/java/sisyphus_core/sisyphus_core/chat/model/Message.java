@@ -30,5 +30,7 @@ public class Message {
 
     @Indexed
     private Long roomId;
+
+    @Builder.Default
     private ZonedDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
 }

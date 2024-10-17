@@ -2,6 +2,7 @@ package sisyphus_core.sisyphus_core.chat.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,8 @@ import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.repository.ChatRoomRepository;
 import sisyphus_core.sisyphus_core.chat.repository.UserChatRoomRepository;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +35,7 @@ public class ChatRoomService {
     private final UserChatRoomRepository userChatRoomRepository;
     private final UserRepository userRepository;
     private final MessageService messageService;
+    private final RedisTemplate redisTemplate;
 
     //채팅 방 생성
     @Transactional
@@ -74,6 +78,7 @@ public class ChatRoomService {
                 .build();
 
         chatRoomRepository.save(chatRoom);
+        saveUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
         for (String nickname : nicknames) {
             User inviteUser = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
             UserChatRoom userChatRoom = UserChatRoom.builder()
@@ -81,6 +86,7 @@ public class ChatRoomService {
                     .user(inviteUser)
                     .build();
             userChatRoomRepository.save(userChatRoom);
+            saveUserJoinTime(chatRoom.getChatRoomId(), nickname);
         }
 
         UserChatRoom userChatRoom = UserChatRoom.builder()
@@ -107,7 +113,7 @@ public class ChatRoomService {
     public void joinChatRoom(String loginId, Long chatRoomId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
-
+        saveUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
         chatRoom.joinUser();
 
         UserChatRoom userChatRoom = UserChatRoom.builder()
@@ -127,6 +133,7 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findById(invite.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
         for (String nickname : invite.getNicknames()) {
             User user = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+            saveUserJoinTime(chatRoom.getChatRoomId(), nickname);
             chatRoom.joinUser();
             if(!chatRoom.isCustomRoomName()) chatRoom.setRoomName(chatRoom.getRoomName() + ", " + user.getNickname());
 
@@ -140,6 +147,13 @@ public class ChatRoomService {
             messageService.join(message);
             userChatRoomRepository.save(userChatRoom);
         }
+    }
+
+    //채팅방 초대, 참여 시 유저 참여 시간 저장
+    public void saveUserJoinTime(Long chatRoomId, String nickname) {
+        String joinKey = "userJoin:" + chatRoomId + ":" + nickname;
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+        redisTemplate.opsForValue().set(joinKey, now.toEpochSecond());
     }
 
     //채팅방 나가기
@@ -171,9 +185,16 @@ public class ChatRoomService {
         Message message = Message.builder().roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).message(user.getNickname() + "님이 퇴장하셨습니다.").
                 type(MessageType.LEAVE).build();
         messageService.leave(message);
+        deleteUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
 
         if(chatRoom.getUserCount() == 0) chatRoomRepository.deleteById(leave.getChatRoomId());
         else chatRoomRepository.save(chatRoom);
+    }
+
+    //채팅방을 나갈때 유저 참여 시간 제거
+    public void deleteUserJoinTime(Long chatRoomId, String nickname) {
+        String joinKey = "userJoin:" + chatRoomId + ":" + nickname;
+        redisTemplate.delete(joinKey);
     }
 
     //ResponseChatRoom으로 변환
