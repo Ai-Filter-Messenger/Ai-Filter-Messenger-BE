@@ -50,5 +50,6 @@ public class User {
     @Builder.Default
     private List<UserChatRoom> chatRooms = new ArrayList<>();
 
+    @Builder.Default
     private ZonedDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
 }
