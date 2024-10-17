@@ -28,9 +28,13 @@ public class ChatRoom {
     @Enumerated(value = EnumType.STRING)
     private ChatRoomType type;
 
+    private boolean customRoomName;
+
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<UserChatRoom> userChatRooms = new ArrayList<>();
 
+    @Builder.Default
     private ZonedDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
 
     public void joinUser(){
