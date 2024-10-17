@@ -1,5 +1,6 @@
 package sisyphus_core.sisyphus_core.chat;
 
+import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,13 +12,17 @@ import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
 import sisyphus_core.sisyphus_core.chat.exception.DuplicateChatRoomNameException;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
+import sisyphus_core.sisyphus_core.chat.model.Message;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
+import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
+import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 import java.util.List;
 
 @SpringBootTest
+@Slf4j
 public class ChatTest {
 
     @Autowired
@@ -25,6 +30,9 @@ public class ChatTest {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private MessageService messageService;
 
     @BeforeEach
     void before(){
@@ -221,5 +229,65 @@ public class ChatTest {
         Assertions.assertThat(roomResponsesTest1.get(0).getRoomName()).isEqualTo("test1");
         Assertions.assertThat(roomResponsesTest1.get(0).getUserCount()).isEqualTo(1);
         Assertions.assertThat(roomResponsesTest2.size()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("채팅방 메세지 조회")
+    void selectChatRoomMessages() throws InterruptedException {
+        String[] nicknames = new String[]{"test2"};
+        ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
+                .loginId("test1")
+                .nicknames(nicknames)
+                .type("general")
+                .build();
+        chatRoomService.createRoom(chatRegister);
+
+        ChatRoom room = chatRoomService.findByRoomName("test1, test2");
+
+        for(int i=0; i<5; i++){
+            Message message = Message.builder()
+                    .type(MessageType.MESSAGE)
+                    .roomId(room.getChatRoomId())
+                    .message("안녕하세요" + i)
+                    .senderName("test1")
+                    .build();
+
+            messageService.sendMessage(message);
+            Thread.sleep(1000);
+        }
+
+        List<Message> messages = messageService.chatRoomMessages(room.getChatRoomId());
+
+        Assertions.assertThat(messages.size()).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("채팅방 최근 메세지 조회")
+    void selectChatRoomRecentMessage() throws InterruptedException{
+        String[] nicknames = new String[]{"test2"};
+        ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
+                .loginId("test1")
+                .roomName("최근메세지조회 채팅방")
+                .nicknames(nicknames)
+                .type("general")
+                .build();
+        chatRoomService.createRoom(chatRegister);
+
+        ChatRoom room = chatRoomService.findByRoomName("최근메세지조회 채팅방");
+
+        for(int i=0; i<5; i++){
+            Message message = Message.builder()
+                    .type(MessageType.MESSAGE)
+                    .roomId(room.getChatRoomId())
+                    .message("안녕하세요" + i)
+                    .senderName("test1")
+                    .build();
+
+            messageService.sendMessage(message);
+            Thread.sleep(1000);
+        }
+
+        Message message = messageService.recentMessage(room.getChatRoomId());
+        Assertions.assertThat(message.getMessage()).isEqualTo("안녕하세요4");
     }
 }
