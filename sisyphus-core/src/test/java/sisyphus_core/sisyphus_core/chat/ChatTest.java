@@ -258,9 +258,54 @@ public class ChatTest {
             Thread.sleep(1000);
         }
 
-        List<Message> messages = messageService.chatRoomMessages(room.getChatRoomId());
+        List<Message> messages = messageService.chatRoomMessages(room.getChatRoomId(), "test1");
 
         Assertions.assertThat(messages.size()).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("유저 참여 후 채팅방 메세지 조회")
+    void selectChatRoomAfterJoin() throws InterruptedException {
+        String[] nicknames = new String[]{"test2"};
+        ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
+                .loginId("test1")
+                .nicknames(nicknames)
+                .type("general")
+                .build();
+        chatRoomService.createRoom(chatRegister);
+
+        ChatRoom room = chatRoomService.findByRoomName("test1, test2");
+
+        for(int i=0; i<3; i++){
+            Message message = Message.builder()
+                    .type(MessageType.MESSAGE)
+                    .roomId(room.getChatRoomId())
+                    .message("안녕하세요" + i)
+                    .senderName("test1")
+                    .build();
+
+            messageService.sendMessage(message);
+            Thread.sleep(1000);
+        }
+
+        chatRoomService.joinChatRoom("test3", room.getChatRoomId());
+        Thread.sleep(1000);
+
+        for(int i=3; i<5; i++){
+            Message message = Message.builder()
+                    .type(MessageType.MESSAGE)
+                    .roomId(room.getChatRoomId())
+                    .message("안녕하세요" + i)
+                    .senderName("test1")
+                    .build();
+
+            messageService.sendMessage(message);
+            Thread.sleep(1000);
+        }
+
+        List<Message> messages = messageService.chatRoomMessages(room.getChatRoomId(), "test3");
+
+        Assertions.assertThat(messages.size()).isEqualTo(3);
     }
 
     @Test
