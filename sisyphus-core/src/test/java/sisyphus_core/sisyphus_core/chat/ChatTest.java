@@ -136,9 +136,10 @@ public class ChatTest {
 
         ChatRoom room = chatRoomService.findByRoomName("채팅방1번");
 
+        String[] nicknames2 = new String[]{"test3"};
         ChatRoomRequest.invite invite = ChatRoomRequest.invite.builder()
                 .chatRoomId(room.getChatRoomId())
-                .loginId("test3")
+                .nicknames(nicknames2)
                 .build();
         chatRoomService.inviteChatRoom(invite);
 
@@ -162,9 +163,10 @@ public class ChatTest {
 
         ChatRoom room = chatRoomService.findByRoomName("test1, test2");
 
+        String[] nicknames2 = new String[]{"test3"};
         ChatRoomRequest.invite invite = ChatRoomRequest.invite.builder()
                 .chatRoomId(room.getChatRoomId())
-                .loginId("test3")
+                .nicknames(nicknames2)
                 .build();
         chatRoomService.inviteChatRoom(invite);
 
