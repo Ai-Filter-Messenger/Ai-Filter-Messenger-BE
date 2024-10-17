@@ -15,6 +15,7 @@ import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomType;
+import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.repository.ChatRoomRepository;
 import sisyphus_core.sisyphus_core.chat.repository.UserChatRoomRepository;
 
@@ -115,6 +116,9 @@ public class ChatRoomService {
                 .build();
 
         userChatRoomRepository.save(userChatRoom);
+        Message message = Message.builder().roomId(chatRoomId).senderName(user.getNickname()).message(user.getNickname() + "님이 입장하셨습니다.").
+                type(MessageType.JOIN).build();
+        messageService.join(message);
     }
 
     //채팅방 초대 (일반채팅)
@@ -131,6 +135,9 @@ public class ChatRoomService {
                     .user(user)
                     .build();
 
+            Message message = Message.builder().roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).message(user.getNickname() + "님이 초대되었습니다.").
+                    type(MessageType.INVITE).build();
+            messageService.join(message);
             userChatRoomRepository.save(userChatRoom);
         }
     }
@@ -160,6 +167,10 @@ public class ChatRoomService {
                 break;
             }
         }
+
+        Message message = Message.builder().roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).message(user.getNickname() + "님이 퇴장하셨습니다.").
+                type(MessageType.LEAVE).build();
+        messageService.leave(message);
 
         if(chatRoom.getUserCount() == 0) chatRoomRepository.deleteById(leave.getChatRoomId());
         else chatRoomRepository.save(chatRoom);
