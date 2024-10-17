@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
+import sisyphus_core.sisyphus_core.chat.exception.DuplicateChatRoomNameException;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
@@ -31,6 +32,7 @@ public class ChatTest {
                 .loginId("test1")
                 .password("1234")
                 .nickname("test1")
+                .email("test1@test.com")
                 .name("test1")
                 .build();
 
@@ -38,6 +40,7 @@ public class ChatTest {
                 .loginId("test2")
                 .password("1234")
                 .nickname("test2")
+                .email("test2@test.com")
                 .name("test2")
                 .build();
 
@@ -45,6 +48,7 @@ public class ChatTest {
                 .loginId("test3")
                 .password("1234")
                 .nickname("test3")
+                .email("test3@test.com")
                 .name("test3")
                 .build();
 
@@ -74,6 +78,40 @@ public class ChatTest {
 
         Assertions.assertThat(roomResponses.size()).isEqualTo(1);
 
+    }
+
+    @Test
+    @DisplayName("중복 오픈 채팅방 생성")
+    void createDuplicateOpenChatRoom(){
+        String[] nicknames = new String[]{"test2"};
+        ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
+                .loginId("test1")
+                .roomName("채팅방1번")
+                .nicknames(nicknames)
+                .type("open")
+                .build();
+
+        chatRoomService.createRoom(chatRegister);
+        Assertions.assertThatThrownBy(() -> chatRoomService.createRoom(chatRegister))
+                .isInstanceOf(DuplicateChatRoomNameException.class)
+                .hasMessage("이미 존재하는 오픈채팅방입니다.");
+    }
+
+    @Test
+    @DisplayName("중복 기본 채팅방 생성")
+    void createDuplicateGeneralChatRoom(){
+        String[] nicknames = new String[]{"test2"};
+        ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
+                .loginId("test1")
+                .roomName("채팅방1번")
+                .nicknames(nicknames)
+                .type("general")
+                .build();
+
+        chatRoomService.createRoom(chatRegister);
+        ChatRoom room = chatRoomService.createRoom(chatRegister);
+
+        Assertions.assertThat(room.getRoomName()).isEqualTo("채팅방1번");
     }
 
     @Test
