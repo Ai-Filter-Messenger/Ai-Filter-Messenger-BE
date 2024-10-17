@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
 import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
@@ -21,9 +22,9 @@ public class ChatController {
     private final ChatRoomService chatRoomService;
 
     @PostMapping("/create")
-    public ResponseEntity<String> createChatRoom(@RequestBody @Valid ChatRoomRequest.register register){
-        chatRoomService.createRoom(register);
-        return ResponseEntity.ok("방 생성에 성공하였습니다.");
+    public ResponseEntity<ChatRoom> createChatRoom(@RequestBody @Valid ChatRoomRequest.register register){
+        ChatRoom room = chatRoomService.createRoom(register);
+        return ResponseEntity.ok().body(room);
     }
 
     @PostMapping("/invite")

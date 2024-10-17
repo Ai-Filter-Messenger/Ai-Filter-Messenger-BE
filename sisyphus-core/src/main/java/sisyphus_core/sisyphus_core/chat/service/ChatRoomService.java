@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sisyphus_core.sisyphus_core.auth.model.User;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
 import sisyphus_core.sisyphus_core.chat.exception.ChatRoomNotFoundException;
+import sisyphus_core.sisyphus_core.chat.exception.DuplicateChatRoomNameException;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
@@ -18,6 +19,7 @@ import sisyphus_core.sisyphus_core.chat.repository.UserChatRoomRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -30,7 +32,7 @@ public class ChatRoomService {
 
     //채팅 방 생성
     @Transactional
-    public void createRoom(ChatRoomRequest.register register){
+    public ChatRoom createRoom(ChatRoomRequest.register register){
         String loginId = register.getLoginId();
         String roomName = register.getRoomName();
         String[] nicknames = register.getNicknames();
@@ -44,6 +46,15 @@ public class ChatRoomService {
                 roomName = user.getNickname() + ", " + nicknames[0];
             } else {
                 roomName = user.getNickname() + ", " + String.join(", ", nicknames);
+            }
+        }
+
+        Optional<ChatRoom> byRoomName = chatRoomRepository.findByRoomName(roomName);
+        if(byRoomName.isPresent()){
+            if(byRoomName.get().getType() == ChatRoomType.OPEN){
+                throw new DuplicateChatRoomNameException("이미 존재하는 오픈채팅방입니다.");
+            }else{
+                return byRoomName.get();
             }
         }
 
@@ -71,6 +82,8 @@ public class ChatRoomService {
                 .build();
 
         userChatRoomRepository.save(userChatRoom);
+
+        return chatRoom;
     }
 
     //유저 채팅방 조회
