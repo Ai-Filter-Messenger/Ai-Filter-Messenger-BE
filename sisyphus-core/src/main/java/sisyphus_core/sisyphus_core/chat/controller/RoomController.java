@@ -36,7 +36,7 @@ public class RoomController {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList(user.getLoginId());
-        List<Message> messages = messageService.chatRoomMessages(chatRoomId);
+        List<Message> messages = messageService.chatRoomMessages(chatRoomId,user.getNickname());
         Collections.reverse(messages);
 
         model.addAttribute("room", chatRoom);
