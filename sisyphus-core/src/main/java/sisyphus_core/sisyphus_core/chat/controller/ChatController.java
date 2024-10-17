@@ -7,9 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
+import sisyphus_core.sisyphus_core.chat.model.Message;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
 import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
+import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 import java.util.List;
 
@@ -20,6 +22,7 @@ import java.util.List;
 public class ChatController {
 
     private final ChatRoomService chatRoomService;
+    private final MessageService messageService;
 
     @PostMapping("/create")
     public ResponseEntity<ChatRoom> createChatRoom(@RequestBody @Valid ChatRoomRequest.register register){
@@ -49,5 +52,10 @@ public class ChatController {
     public ResponseEntity<List<ChatRoomResponse>> getUserChatRoomList(@RequestParam String loginId){
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList(loginId);
         return ResponseEntity.ok().body(roomResponses);
+    }
+
+    @GetMapping("/find/message")
+    public ResponseEntity<List<Message>> getChatRoomMessages(@RequestParam Long chatRoomId){
+        return ResponseEntity.ok().body(messageService.chatRoomMessages(chatRoomId));
     }
 }

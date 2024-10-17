@@ -10,6 +10,7 @@ import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
 import sisyphus_core.sisyphus_core.chat.exception.ChatRoomNotFoundException;
 import sisyphus_core.sisyphus_core.chat.exception.DuplicateChatRoomNameException;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
+import sisyphus_core.sisyphus_core.chat.model.Message;
 import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
@@ -29,6 +30,7 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final UserChatRoomRepository userChatRoomRepository;
     private final UserRepository userRepository;
+    private final MessageService messageService;
 
     //채팅 방 생성
     @Transactional
@@ -50,11 +52,15 @@ public class ChatRoomService {
         }
 
         Optional<ChatRoom> byRoomName = chatRoomRepository.findByRoomName(roomName);
+        List<UserChatRoom> chatRoomList = userChatRoomRepository.findUserChatRoomsByUser(user);
         if(byRoomName.isPresent()){
-            if(byRoomName.get().getType() == ChatRoomType.OPEN){
+            ChatRoom chatRoom = byRoomName.get();
+            if(chatRoom.getType() == ChatRoomType.OPEN){
                 throw new DuplicateChatRoomNameException("이미 존재하는 오픈채팅방입니다.");
             }else{
-                return byRoomName.get();
+                for (UserChatRoom userChatRoom : chatRoomList) {
+                    if(userChatRoom.getChatRoom().equals(chatRoom)) return chatRoom;
+                }
             }
         }
 
@@ -167,6 +173,12 @@ public class ChatRoomService {
             ChatRoom chatRoom = userChatRoom.getChatRoom();
             List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
 
+            Message message = messageService.recentMessage(chatRoom.getChatRoomId());
+            String recentMessage = "";
+            if(message != null){
+                recentMessage = message.getMessage();
+            }
+
             for (UserChatRoom room : userChatRoomsByChatRoom) {
                 profileImageUrls.add(room.getUser().getProfileImageUrl());
             }
@@ -177,6 +189,7 @@ public class ChatRoomService {
                     .roomName(chatRoom.getRoomName())
                     .profileImages(profileImageUrls)
                     .userCount(chatRoom.getUserCount())
+                    .recentMessage(recentMessage)
                     .build();
 
             roomResponses.add(chatRoomResponse);
