@@ -15,6 +15,7 @@ public class UserRequest {
         private String loginId;
         private String password;
         private String nickname;
+        private String email;
         private String name;
         private String describe;
         private String profileImageUrl;
