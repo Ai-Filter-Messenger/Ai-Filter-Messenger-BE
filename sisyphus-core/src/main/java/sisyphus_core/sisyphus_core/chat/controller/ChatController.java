@@ -54,8 +54,9 @@ public class ChatController {
         return ResponseEntity.ok().body(roomResponses);
     }
 
-    @GetMapping("/find/message")
-    public ResponseEntity<List<Message>> getChatRoomMessages(@RequestParam Long chatRoomId){
-        return ResponseEntity.ok().body(messageService.chatRoomMessages(chatRoomId));
-    }
+    //auth 만들면 구현예정
+//    @GetMapping("/find/message")
+//    public ResponseEntity<List<Message>> getChatRoomMessages(@RequestParam Long chatRoomId){
+//        return ResponseEntity.ok().body(messageService.chatRoomMessages(chatRoomId));
+//    }
 }
