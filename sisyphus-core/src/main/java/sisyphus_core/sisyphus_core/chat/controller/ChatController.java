@@ -26,9 +26,15 @@ public class ChatController {
         return ResponseEntity.ok("방 생성에 성공하였습니다.");
     }
 
+    @PostMapping("/invite")
+    public ResponseEntity<String> inviteChatRoom(@RequestBody @Valid ChatRoomRequest.invite invite){
+        chatRoomService.inviteChatRoom(invite);
+        return ResponseEntity.ok("방에 초대하였습니다.");
+    }
+
     @PostMapping("/join")
-    public ResponseEntity<String> joinChatRoom(@RequestBody @Valid ChatRoomRequest.join join){
-        chatRoomService.joinChatRoom(join);
+    public ResponseEntity<String> joinChatRoom(Authentication auth, @RequestBody @Valid ChatRoomRequest.join join){
+        chatRoomService.joinChatRoom(auth.getName(), join.getChatRoomId());
         return ResponseEntity.ok("방에 입장하였습니다.");
     }
 
