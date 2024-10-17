@@ -6,9 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
+import sisyphus_core.sisyphus_core.chat.model.Message;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
 import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
+import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 import java.util.List;
 
@@ -19,11 +22,12 @@ import java.util.List;
 public class ChatController {
 
     private final ChatRoomService chatRoomService;
+    private final MessageService messageService;
 
     @PostMapping("/create")
-    public ResponseEntity<String> createChatRoom(@RequestBody @Valid ChatRoomRequest.register register){
-        chatRoomService.createRoom(register);
-        return ResponseEntity.ok("방 생성에 성공하였습니다.");
+    public ResponseEntity<ChatRoom> createChatRoom(@RequestBody @Valid ChatRoomRequest.register register){
+        ChatRoom room = chatRoomService.createRoom(register);
+        return ResponseEntity.ok().body(room);
     }
 
     @PostMapping("/invite")
@@ -49,4 +53,10 @@ public class ChatController {
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList(loginId);
         return ResponseEntity.ok().body(roomResponses);
     }
+
+    //auth 만들면 구현예정
+//    @GetMapping("/find/message")
+//    public ResponseEntity<List<Message>> getChatRoomMessages(@RequestParam Long chatRoomId){
+//        return ResponseEntity.ok().body(messageService.chatRoomMessages(chatRoomId));
+//    }
 }

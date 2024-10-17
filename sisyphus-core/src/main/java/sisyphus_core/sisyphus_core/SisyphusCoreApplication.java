@@ -6,8 +6,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
+import sisyphus_core.sisyphus_core.chat.model.Message;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
+import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
+import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 @SpringBootApplication
 @RequiredArgsConstructor
@@ -15,12 +18,13 @@ public class SisyphusCoreApplication {
 
 	private final UserService userService;
 	private final ChatRoomService chatRoomService;
+	private final MessageService messageService;
 
 	public static void main(String[] args) {
 		SpringApplication.run(SisyphusCoreApplication.class, args);
 	}
 
-//	@PostConstruct
+	@PostConstruct
 	public void postData(){
 		UserRequest.register register1= UserRequest.register.builder()
 				.loginId("test1")
@@ -61,6 +65,14 @@ public class SisyphusCoreApplication {
 				.nicknames(nicknames2)
 				.type("open")
 				.build();
+
+		Message message = Message.builder()
+				.message("안녕하세요")
+				.senderName("test1")
+				.type(MessageType.MESSAGE)
+				.roomId(1L)
+				.build();
+		messageService.sendMessage(message);
 
 		userService.register(register1);
 		userService.register(register2);

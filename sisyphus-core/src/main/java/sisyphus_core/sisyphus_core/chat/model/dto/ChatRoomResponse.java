@@ -18,4 +18,5 @@ public class ChatRoomResponse {
     private String roomName;
     private List<String> profileImages;
     private int userCount;
+    private String recentMessage;
 }
