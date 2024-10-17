@@ -163,6 +163,7 @@ public class ChatRoomService {
                     .type(chatRoom.getType())
                     .roomName(chatRoom.getRoomName())
                     .profileImages(profileImageUrls)
+                    .userCount(chatRoom.getUserCount())
                     .build();
 
             roomResponses.add(chatRoomResponse);
