@@ -10,7 +10,15 @@ import sisyphus_core.sisyphus_core.auth.model.User;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
 import sisyphus_core.sisyphus_core.chat.exception.ChatRoomNotFoundException;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
+import sisyphus_core.sisyphus_core.chat.model.Message;
+import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
+import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.repository.ChatRoomRepository;
+import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
+import sisyphus_core.sisyphus_core.chat.service.MessageService;
+
+import java.util.Collections;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -18,6 +26,8 @@ public class RoomController {
 
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
+    private final ChatRoomService chatRoomService;
+    private final MessageService messageService;
 
     @GetMapping("/chat/{chatRoomId}/{loginId}")
     public String chatP(@PathVariable("chatRoomId") Long chatRoomId,
@@ -25,8 +35,14 @@ public class RoomController {
                         Model model){
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList(user.getLoginId());
+        List<Message> messages = messageService.chatRoomMessages(chatRoomId);
+        Collections.reverse(messages);
+
         model.addAttribute("room", chatRoom);
         model.addAttribute("user", user);
+        model.addAttribute("roomList", roomResponses);
+        model.addAttribute("messages", messages);
 
         return "chatRoom";
     }

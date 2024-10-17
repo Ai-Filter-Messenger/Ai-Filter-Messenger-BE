@@ -42,7 +42,7 @@ public class ChatRoomService {
         boolean customRoomName = true;
 
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
-        if(roomName == null) {
+        if(roomName == null || roomName.equals("")) {
             customRoomName = false;
             if (nicknames.length == 1) {
                 roomName = user.getNickname() + ", " + nicknames[0];
@@ -120,18 +120,19 @@ public class ChatRoomService {
     //채팅방 초대 (일반채팅)
     @Transactional
     public void inviteChatRoom(ChatRoomRequest.invite invite){
-        User user = userRepository.findByLoginId(invite.getLoginId()).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         ChatRoom chatRoom = chatRoomRepository.findById(invite.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+        for (String nickname : invite.getNicknames()) {
+            User user = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+            chatRoom.joinUser();
+            if(!chatRoom.isCustomRoomName()) chatRoom.setRoomName(chatRoom.getRoomName() + ", " + user.getNickname());
 
-        chatRoom.joinUser();
-        if(!chatRoom.isCustomRoomName()) chatRoom.setRoomName(chatRoom.getRoomName() + ", " + user.getNickname());
+            UserChatRoom userChatRoom = UserChatRoom.builder()
+                    .chatRoom(chatRoom)
+                    .user(user)
+                    .build();
 
-        UserChatRoom userChatRoom = UserChatRoom.builder()
-                .chatRoom(chatRoom)
-                .user(user)
-                .build();
-
-        userChatRoomRepository.save(userChatRoom);
+            userChatRoomRepository.save(userChatRoom);
+        }
     }
 
     //채팅방 나가기
