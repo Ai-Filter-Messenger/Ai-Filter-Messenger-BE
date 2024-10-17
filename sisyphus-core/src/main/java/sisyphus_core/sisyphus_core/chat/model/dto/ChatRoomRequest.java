@@ -21,7 +21,8 @@ public class ChatRoomRequest {
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class join{
+    @Builder
+    public static class invite{
         private Long chatRoomId;
         private String loginId;
     }
@@ -29,6 +30,15 @@ public class ChatRoomRequest {
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
+    @Builder
+    public static class join{
+        private Long chatRoomId;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
     public static class leave{
         private String loginId;
         private Long chatRoomId;

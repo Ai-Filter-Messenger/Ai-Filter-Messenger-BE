@@ -21,6 +21,7 @@ public class UserService {
     @Value("${default.profile.image.url}")
     private String defProfileImage;
 
+    //유저 회원가입
     @Transactional
     public void register(UserRequest.register register){
         User user = User.builder()
@@ -37,6 +38,7 @@ public class UserService {
         userRepository.save(user);
     }
 
+    //유저 로그인 아이디 중복 검증
     @Transactional
     public void checkDuplicateLoginId(String loginId){
         if(userRepository.findByLoginId(loginId).isPresent()){
@@ -44,10 +46,17 @@ public class UserService {
         }
     }
 
+    //유저 닉네임 중복 검증
     @Transactional
     public void checkDuplicateNickname(String nickname){
         if(userRepository.findByNickname(nickname).isPresent()){
             new DuplicateUserNicknameException("이미 존재하는 닉네임입니다.");
         }
+    }
+
+    //테스트 코드용 데이터 전체 삭제
+    @Transactional
+    public void deleteAll(){
+        userRepository.deleteAll();
     }
 }

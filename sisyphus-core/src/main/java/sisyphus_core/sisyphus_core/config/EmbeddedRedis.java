@@ -30,7 +30,7 @@ public class EmbeddedRedis {
     }
 
     @PreDestroy
-    public void stopReids(){
+    public void stopRedis(){
         if(redisServer != null){
             redisServer.stop();
         }

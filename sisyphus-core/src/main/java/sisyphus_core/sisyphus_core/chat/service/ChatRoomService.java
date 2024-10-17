@@ -35,12 +35,15 @@ public class ChatRoomService {
         String roomName = register.getRoomName();
         String[] nicknames = register.getNicknames();
         String type = register.getType();
+        boolean customRoomName = true;
+
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
-        if(roomName == null){
-            if(nicknames.length == 1){
-                roomName = nicknames[0];
-            }else{
-                roomName = String.join(", " , nicknames);
+        if(roomName == null) {
+            customRoomName = false;
+            if (nicknames.length == 1) {
+                roomName = user.getNickname() + ", " + nicknames[0];
+            } else {
+                roomName = user.getNickname() + ", " + String.join(", ", nicknames);
             }
         }
 
@@ -49,6 +52,7 @@ public class ChatRoomService {
                 .roomName(roomName)
                 .userCount(nicknames.length + 1)
                 .type(chatRoomType)
+                .customRoomName(customRoomName)
                 .build();
 
         chatRoomRepository.save(chatRoom);
@@ -78,15 +82,30 @@ public class ChatRoomService {
         return toResponseChatRoom(userChatRoomsByUser);
     }
 
-
-    //채팅방 입장 혹은 초대 (입장은 오픈채팅, 초대는 일반채팅)
+    //채팅방 입장 (오픈채팅)
     @Transactional
-    public void joinChatRoom(ChatRoomRequest.join join){
-        User user = userRepository.findByLoginId(join.getLoginId()).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
-        ChatRoom chatRoom = chatRoomRepository.findById(join.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+    public void joinChatRoom(String loginId, Long chatRoomId){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
 
         chatRoom.joinUser();
-        chatRoom.setRoomName(chatRoom.getRoomName() + ", " + user.getNickname());
+
+        UserChatRoom userChatRoom = UserChatRoom.builder()
+                .chatRoom(chatRoom)
+                .user(user)
+                .build();
+
+        userChatRoomRepository.save(userChatRoom);
+    }
+
+    //채팅방 초대 (일반채팅)
+    @Transactional
+    public void inviteChatRoom(ChatRoomRequest.invite invite){
+        User user = userRepository.findByLoginId(invite.getLoginId()).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        ChatRoom chatRoom = chatRoomRepository.findById(invite.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+
+        chatRoom.joinUser();
+        if(!chatRoom.isCustomRoomName()) chatRoom.setRoomName(chatRoom.getRoomName() + ", " + user.getNickname());
 
         UserChatRoom userChatRoom = UserChatRoom.builder()
                 .chatRoom(chatRoom)
@@ -103,6 +122,17 @@ public class ChatRoomService {
         ChatRoom chatRoom = chatRoomRepository.findById(leave.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
 
         chatRoom.leaveUser();
+        if(!chatRoom.isCustomRoomName()) {
+            String renewalChatRoomName = chatRoom.getRoomName().replace(user.getNickname(), "").trim();
+
+            renewalChatRoomName = renewalChatRoomName.replaceAll(",\\s*,", ", ")
+                    .replaceAll(",\\s*$", "")
+                    .replaceAll("^\\s*,", "")
+                    .trim();
+
+            chatRoom.setRoomName(renewalChatRoomName);
+        }
+
         List<UserChatRoom> userChatRoomsByUser = userChatRoomRepository.findUserChatRoomsByUser(user);
         for (UserChatRoom userChatRoom : userChatRoomsByUser) {
             if (userChatRoom.getChatRoom().getChatRoomId().equals(leave.getChatRoomId())) {
@@ -133,11 +163,24 @@ public class ChatRoomService {
                     .type(chatRoom.getType())
                     .roomName(chatRoom.getRoomName())
                     .profileImages(profileImageUrls)
+                    .userCount(chatRoom.getUserCount())
                     .build();
 
             roomResponses.add(chatRoomResponse);
         }
 
         return roomResponses;
+    }
+
+    //테스트 코드용 데이터 전체 삭제
+    @Transactional
+    public void deleteAll(){
+        userChatRoomRepository.deleteAll();
+        chatRoomRepository.deleteAll();
+    }
+
+    @Transactional
+    public ChatRoom findByRoomName(String roomName){
+        return chatRoomRepository.findByRoomName(roomName).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
     }
 }
