@@ -17,6 +17,7 @@ import java.util.UUID;
 @RedisHash(value = "message" , timeToLive = 86400)
 public class Message {
 
+    @Setter
     private MessageType type;
 
     @Id

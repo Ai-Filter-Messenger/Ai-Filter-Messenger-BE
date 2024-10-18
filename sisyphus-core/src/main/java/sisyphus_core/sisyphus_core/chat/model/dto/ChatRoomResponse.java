@@ -19,4 +19,6 @@ public class ChatRoomResponse {
     private List<String> profileImages;
     private int userCount;
     private String recentMessage;
+    private boolean isCheck;
+    private int NotificationCount;
 }

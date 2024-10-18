@@ -50,6 +50,14 @@ public class SisyphusCoreApplication {
 				.name("test3")
 				.build();
 
+		UserRequest.register register4= UserRequest.register.builder()
+				.loginId("test4")
+				.password("1234")
+				.nickname("test4")
+				.email("test4@test.com")
+				.name("test4")
+				.build();
+
 		String[] nicknames = new String[]{"test2"};
 		ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
 						.loginId("test1")
@@ -66,17 +74,10 @@ public class SisyphusCoreApplication {
 				.type("open")
 				.build();
 
-		Message message = Message.builder()
-				.message("안녕하세요")
-				.senderName("test1")
-				.type(MessageType.MESSAGE)
-				.roomId(1L)
-				.build();
-		messageService.sendMessage(message);
-
 		userService.register(register1);
 		userService.register(register2);
 		userService.register(register3);
+		userService.register(register4);
 		chatRoomService.createRoom(chatRegister);
 		chatRoomService.createRoom(chatRegister2);
 	}

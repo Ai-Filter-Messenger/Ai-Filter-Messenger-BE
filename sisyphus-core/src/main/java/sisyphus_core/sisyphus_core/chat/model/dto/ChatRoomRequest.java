@@ -25,6 +25,7 @@ public class ChatRoomRequest {
     public static class invite{
         private Long chatRoomId;
         private String[] nicknames;
+        private String invitorName;
     }
 
     @Getter
@@ -42,5 +43,14 @@ public class ChatRoomRequest {
     public static class leave{
         private String loginId;
         private Long chatRoomId;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class notification{
+        private Long roomId;
+        private String nickname;
     }
 }
