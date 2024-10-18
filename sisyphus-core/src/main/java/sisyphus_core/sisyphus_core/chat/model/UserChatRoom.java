@@ -26,4 +26,16 @@ public class UserChatRoom {
     @ManyToOne
     @JoinColumn(name = "chatRoom_id", nullable = false)
     private ChatRoom chatRoom;
+
+    private boolean isCheck;
+
+    private int NotificationCount;
+
+    public void upCount(){
+        this.NotificationCount++;
+    }
+
+    public void resetCount(){
+        this.NotificationCount = 0;
+    }
 }

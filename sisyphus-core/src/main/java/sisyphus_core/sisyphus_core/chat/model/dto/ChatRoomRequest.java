@@ -44,4 +44,13 @@ public class ChatRoomRequest {
         private String loginId;
         private Long chatRoomId;
     }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class notification{
+        private Long roomId;
+        private String nickname;
+    }
 }

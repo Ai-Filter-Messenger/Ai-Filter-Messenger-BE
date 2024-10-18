@@ -60,4 +60,9 @@ public class UserService {
     public void deleteAll(){
         userRepository.deleteAll();
     }
+
+    @Transactional
+    public User findByNickname(String nickname){
+        return userRepository.findByNickname(nickname).get();
+    }
 }

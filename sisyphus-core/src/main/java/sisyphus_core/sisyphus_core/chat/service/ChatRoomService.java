@@ -3,6 +3,7 @@ package sisyphus_core.sisyphus_core.chat.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,7 @@ public class ChatRoomService {
     private final UserRepository userRepository;
     private final MessageService messageService;
     private final RedisTemplate redisTemplate;
+    private final SimpMessagingTemplate template;
 
     //채팅 방 생성
     @Transactional
@@ -51,17 +53,6 @@ public class ChatRoomService {
                 roomName = user.getNickname() + ", " + nicknames[0];
             } else {
                 roomName = user.getNickname() + ", " + String.join(", ", nicknames);
-            }
-        }
-
-        String createMessage = user.getNickname() + "님이 ";
-
-        for(int i=0; i<nicknames.length; i++){
-            String nickname = nicknames[i];
-            if (i == nicknames.length - 1) {
-                createMessage += nickname + "님을 초대하였습니다.";
-            } else {
-                createMessage += nickname + "님과 ";
             }
         }
 
@@ -87,14 +78,15 @@ public class ChatRoomService {
                 .build();
 
         chatRoomRepository.save(chatRoom);
-        Message message = Message.builder().type(MessageType.INVITE).message(createMessage).roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).build();
-        messageService.join(message);
+
         saveUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
         for (String nickname : nicknames) {
             User inviteUser = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
             UserChatRoom userChatRoom = UserChatRoom.builder()
                     .chatRoom(chatRoom)
                     .user(inviteUser)
+                    .isCheck(false)
+                    .NotificationCount(0)
                     .build();
             userChatRoomRepository.save(userChatRoom);
             saveUserJoinTime(chatRoom.getChatRoomId(), nickname);
@@ -103,10 +95,27 @@ public class ChatRoomService {
         UserChatRoom userChatRoom = UserChatRoom.builder()
                 .chatRoom(chatRoom)
                 .user(user)
+                .isCheck(false)
+                .NotificationCount(0)
                 .build();
 
         userChatRoomRepository.save(userChatRoom);
+        String createMessage = user.getNickname() + "님이 ";
 
+        for(int i=0; i<nicknames.length; i++){
+            String nickname = nicknames[i];
+            if (i == nicknames.length - 1) {
+                createMessage += nickname + "님을 초대하였습니다.";
+            } else {
+                createMessage += nickname + "님과 ";
+            }
+
+            template.convertAndSend("/queue/chatroom/list/" + nickname, toResponseChatRoom(chatRoom));
+        }
+
+        Message message = Message.builder().type(MessageType.INVITE).message(createMessage).roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).build();
+        messageService.join(message);
+        template.convertAndSend("/queue/chatroom/list/" + user.getNickname(), toResponseChatRoom(chatRoom));
         return chatRoom;
     }
 
@@ -130,6 +139,8 @@ public class ChatRoomService {
         UserChatRoom userChatRoom = UserChatRoom.builder()
                 .chatRoom(chatRoom)
                 .user(user)
+                .isCheck(false)
+                .NotificationCount(0)
                 .build();
 
         userChatRoomRepository.save(userChatRoom);
@@ -159,6 +170,8 @@ public class ChatRoomService {
             UserChatRoom userChatRoom = UserChatRoom.builder()
                     .chatRoom(chatRoom)
                     .user(user)
+                    .isCheck(false)
+                    .NotificationCount(0)
                     .build();
 
             userChatRoomRepository.save(userChatRoom);
@@ -248,12 +261,41 @@ public class ChatRoomService {
                     .profileImages(profileImageUrls)
                     .userCount(chatRoom.getUserCount())
                     .recentMessage(recentMessage)
+                    .NotificationCount(userChatRoom.getNotificationCount())
+                    .isCheck(false)
                     .build();
 
             roomResponses.add(chatRoomResponse);
         }
 
         return roomResponses;
+    }
+
+    @Transactional
+    public ChatRoomResponse toResponseChatRoom(ChatRoom chatRoom) {
+        List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
+        List<String> profileImageUrls = new ArrayList<>();
+
+        Message message = messageService.recentMessage(chatRoom.getChatRoomId());
+        String recentMessage = "";
+        if(message != null){
+            recentMessage = message.getMessage();
+        }
+
+        for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
+            profileImageUrls.add(userChatRoom.getUser().getProfileImageUrl());
+        }
+
+        return ChatRoomResponse.builder()
+                .roomName(chatRoom.getRoomName())
+                .chatRoomId(chatRoom.getChatRoomId())
+                .type(chatRoom.getType())
+                .NotificationCount(0)
+                .isCheck(false)
+                .profileImages(profileImageUrls)
+                .recentMessage(recentMessage)
+                .userCount(chatRoom.getUserCount())
+                .build();
     }
 
     //테스트 코드용 데이터 전체 삭제
