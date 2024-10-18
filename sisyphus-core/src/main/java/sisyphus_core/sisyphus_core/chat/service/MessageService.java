@@ -2,11 +2,17 @@ package sisyphus_core.sisyphus_core.chat.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sisyphus_core.sisyphus_core.chat.exception.ChatRoomNotFoundException;
+import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.Message;
+import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
+import sisyphus_core.sisyphus_core.chat.repository.ChatRoomRepository;
+import sisyphus_core.sisyphus_core.chat.repository.UserChatRoomRepository;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -17,15 +23,23 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MessageService {
 
     private final SimpMessagingTemplate template;
     private final KafkaProducerService kafkaProducerService;
     private final RedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final UserChatRoomRepository userChatRoomRepository;
+    private final ChatRoomRepository chatRoomRepository;
 
     @Transactional
     public void sendMessage(Message message){
+        ChatRoom chatRoom = chatRoomRepository.findById(message.getRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+        List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
+        for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
+            template.convertAndSend("/queue/chatroom/" + userChatRoom.getUser().getNickname(), message);
+        }
         kafkaProducerService.sendMessage(message);
         template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
     }

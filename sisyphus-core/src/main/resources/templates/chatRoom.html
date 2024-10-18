@@ -212,7 +212,8 @@
             <a th:each="room, stat : ${roomList}"
                th:href="@{/chat/{chatRoomId}/{loginId}(chatRoomId=${room.chatRoomId}, loginId=${user.loginId})}"
                class="list-group-item list-group-item-action d-flex align-items-center position-relative"
-               style="background-color: #333; color: #ccc; border: none; margin-bottom: 10px; padding: 15px;">
+               style="background-color: #333; color: #ccc; border: none; margin-bottom: 10px; padding: 15px;"
+               th:attr="data-room-id=${room.chatRoomId}">
 
                 <!-- 프로필 이미지 컨테이너 -->
                 <div th:if="${room.profileImages.size() <= 3}" style="display: flex; align-items: center; justify-content: start; width: 80px; position: relative;">
@@ -235,7 +236,7 @@
                 <div>
                     <div style="font-weight: bold; color: #fff;" th:text="${room.roomName}">채팅방 이름</div>
                     <div style="font-size: 12px; color: #aaa; margin-top: 5px;" th:text="${room.type}">일반채팅</div>
-                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;" th:if="${room.recentMessage != ''}" th:text="${room.recentMessage}">최근 메시지: 안녕하세요</div>
+                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;" class="recent-message" th:text="${room.recentMessage}">최근 메시지: 안녕하세요</div>
                 </div>
             </a>
         </div>
@@ -298,7 +299,28 @@
                 showMessage(JSON.parse(message.body));
             });
             stompClient.subscribe('/queue/chatroom/' + senderName, function (message){
-                console.log(JSON.parse(message.body));
+                const data = JSON.parse(message.body);
+
+                console.log("수신한 데이터:" , data);
+
+                // roomId가 일치하는 채팅방을 찾음
+                const roomElement = document.querySelector(`[data-room-id='${data.roomId}']`);
+                if (!roomElement) {
+                    console.error("채팅방을 찾을 수 없습니다. roomId: ", data.roomId);
+                } else {
+                    console.log("채팅방이 확인되었습니다. roomId: ", data.roomId);
+                }
+
+                if (roomElement) {
+                    // 최근 메시지 요소 업데이트
+                    const recentMessageElement = roomElement.querySelector('.recent-message');
+                    if (!recentMessageElement) {
+                        console.error("최근 메시지 요소를 찾을 수 없습니다.");
+                    } else {
+                        recentMessageElement.textContent = data.message;
+                        console.log("최근 메시지가 업데이트되었습니다.");
+                    }
+                }
             });
             stompClient.subscribe('/queue/notification/' + senderName, function(message){
                 console.log(JSON.parse(message.body));
