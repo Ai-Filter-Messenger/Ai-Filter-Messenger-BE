@@ -25,6 +25,7 @@ public class ChatRoomRequest {
     public static class invite{
         private Long chatRoomId;
         private String[] nicknames;
+        private String invitorName;
     }
 
     @Getter

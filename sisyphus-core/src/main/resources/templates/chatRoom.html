@@ -79,8 +79,8 @@
 
         .chat-messages .message.other {
             text-align: left;
-            background-color: #333;
-            color: #ccc;
+            background-color: #b8a4a4;
+            color: #514848;
             padding: 10px;
             border-radius: 10px;
             margin-bottom: 10px;
@@ -100,6 +100,20 @@
             max-width: 60%;
             clear: both;
             float: right;
+        }
+
+        .chat-messages .message.center {
+            text-align: center;
+            background-color: #444;
+            color: #eee;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            max-width: 60%;
+            margin-left: auto;
+            margin-right: auto;
+            clear: both;
+            float: none;
         }
 
         .chat-footer {
@@ -141,6 +155,35 @@
         .btn-danger {
             background-color: #e53e3e;
         }
+
+        .profile-images-3 {
+            display: flex;
+            align-items: center;
+            justify-content: start;
+            width: 80px;
+            position: relative;
+        }
+
+        .profile-images-3 img {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        /* 4명 이상일 때 그리드 배치 */
+        .profile-images-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 25px);
+            grid-template-rows: repeat(2, 25px);
+            gap: 5px;
+        }
+
+        .profile-images-grid img {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
@@ -172,20 +215,27 @@
                style="background-color: #333; color: #ccc; border: none; margin-bottom: 10px; padding: 15px;">
 
                 <!-- 프로필 이미지 컨테이너 -->
-                <div style="display: flex; align-items: center; justify-content: start; width: 80px; position: relative;">
-                    <!-- 프로필 이미지 최대 3개까지 표시 -->
+                <div th:if="${room.profileImages.size() <= 3}" style="display: flex; align-items: center; justify-content: start; width: 80px; position: relative;">
                     <img th:each="url, iterStat : ${room.profileImages}"
                          th:if="${iterStat.index < 3}"
-                    th:src="@{${url}}"
-                    alt="Profile Image"
-                    style="width: 25px; height: 25px; border-radius: 50%; position: absolute; left: [[${iterStat.index} * 10]]px; z-index: [[${10 - iterStat.index}]];">
+                         th:src="@{${url}}"
+                         alt="Profile Image"
+                         th:style="'width: 25px; height: 25px; border-radius: 50%; position: absolute; left: ' + (${iterStat.index} * 10) + 'px; z-index: ' + (10 - ${iterStat.index}) + ';'">
+                </div>
+
+                <div th:if="${room.profileImages.size() > 3}" style="display: grid; grid-template-columns: repeat(2, 25px); grid-template-rows: repeat(2, 25px); gap: 5px;">
+                    <img th:each="url, iterStat : ${room.profileImages}"
+                         th:if="${iterStat.index < 4}"
+                         th:src="@{${url}}"
+                         alt="Profile Image"
+                         style="width: 25px; height: 25px; border-radius: 50%;">
                 </div>
 
                 <!-- 방 정보 -->
                 <div>
                     <div style="font-weight: bold; color: #fff;" th:text="${room.roomName}">채팅방 이름</div>
                     <div style="font-size: 12px; color: #aaa; margin-top: 5px;" th:text="${room.type}">일반채팅</div>
-                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;" th:if="${room.recentMessage != ''}" th:text="'최근 메시지: ' + ${room.recentMessage}">최근 메시지: 안녕하세요</div>
+                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;" th:if="${room.recentMessage != ''}" th:text="${room.recentMessage}">최근 메시지: 안녕하세요</div>
                 </div>
             </a>
         </div>
@@ -209,10 +259,17 @@
         <div class="chat-messages" id="chat-messages">
             <!-- Messages will be appended here -->
             <div th:each="message : ${messages}">
-                <div th:if="${message.senderName == loginId}" class="message mine">
-                    <p th:text="${message.message}"></p>
+                <div th:if="${message.type == T(sisyphus_core.sisyphus_core.chat.model.dto.MessageType).MESSAGE}">
+                    <div th:if="${message.senderName == loginId}" class="message mine">
+                        <p th:text="${message.message}"></p>
+                    </div>
+                    <div th:if="${message.senderName != loginId}" class="message other">
+                        <p th:text="${message.message}"></p>
+                    </div>
                 </div>
-                <div th:if="${message.senderName != loginId}" class="message other">
+
+                <!-- message.type이 MESSAGE가 아닐 때 -->
+                <div th:if="${message.type != T(sisyphus_core.sisyphus_core.chat.model.dto.MessageType).MESSAGE}" class="message center">
                     <p th:text="${message.message}"></p>
                 </div>
             </div>
@@ -240,14 +297,12 @@
             stompClient.subscribe('/topic/chatroom/' + roomId, function (message) {
                 showMessage(JSON.parse(message.body));
             });
-
-            // // 방에 입장
-            // stompClient.send('/app/chat/join', {}, JSON.stringify({
-            //     roomId: roomId,
-            //     senderName: senderName,
-            //     senderId: senderId,
-            //     message: senderName
-            // }));
+            stompClient.subscribe('/queue/chatroom/' + senderName, function (message){
+                console.log(JSON.parse(message.body));
+            });
+            stompClient.subscribe('/queue/notification/' + senderName, function(message){
+                console.log(JSON.parse(message.body));
+            });
         });
     }
 
@@ -360,7 +415,8 @@
 
         const inviteRequest = {
             chatRoomId: roomId,
-            nicknames: nicknames
+            nicknames: nicknames,
+            invitorName : senderName
         };
 
         fetch('/api/chat/invite', {
