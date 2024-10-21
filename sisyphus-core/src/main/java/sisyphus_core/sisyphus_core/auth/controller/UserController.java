@@ -37,9 +37,12 @@ public class UserController {
     public ResponseEntity<UserResponse.find> findLoginId(@RequestBody @Valid UserRequest.find find){
         return ResponseEntity.ok().body(userService.findLoginId(find.getEmail()));
     }
+
     //비밀번호찾기
-    //메일 인증
-    //코드 인증
+    @GetMapping("/find/password")
+    public ResponseEntity<UserResponse.find> findPassword(@RequestBody @Valid UserRequest.find find){
+        return ResponseEntity.ok().body(userService.findPassword(find.getLoginId()));
+    }
 
     //로그인아이디 중복체크
     @GetMapping("/check/loginId")

@@ -71,6 +71,13 @@ public class UserService {
         return new UserResponse.find(user.getLoginId(), "");
     }
 
+    //비밀번호찾기
+    @Transactional
+    public UserResponse.find findPassword(String loginId){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        return new UserResponse.find("", user.getPassword());
+    }
+
     //유저 로그인 아이디 중복 검증
     @Transactional
     public void checkDuplicateLoginId(String loginId){
