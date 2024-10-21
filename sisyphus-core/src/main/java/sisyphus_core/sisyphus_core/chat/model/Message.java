@@ -21,6 +21,7 @@ public class Message {
     private MessageType type;
 
     @Id
+    @Builder.Default
     private String id = UUID.randomUUID().toString();
 
     @Setter

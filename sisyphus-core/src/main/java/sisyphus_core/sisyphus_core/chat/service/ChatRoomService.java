@@ -34,7 +34,7 @@ public class ChatRoomService {
     private final UserChatRoomRepository userChatRoomRepository;
     private final UserRepository userRepository;
     private final MessageService messageService;
-    private final RedisTemplate redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final SimpMessagingTemplate template;
 
     //채팅 방 생성
