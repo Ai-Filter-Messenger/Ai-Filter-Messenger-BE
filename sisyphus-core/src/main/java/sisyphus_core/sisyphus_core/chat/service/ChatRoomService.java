@@ -278,8 +278,10 @@ public class ChatRoomService {
 
         Message message = messageService.recentMessage(chatRoom.getChatRoomId());
         String recentMessage = "";
+        ZonedDateTime createAt = null;
         if(message != null){
             recentMessage = message.getMessage();
+            createAt = message.getCreateAt();
         }
 
         for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
@@ -294,6 +296,7 @@ public class ChatRoomService {
                 .isCheck(false)
                 .profileImages(profileImageUrls)
                 .recentMessage(recentMessage)
+                .createAt(createAt)
                 .userCount(chatRoom.getUserCount())
                 .build();
     }

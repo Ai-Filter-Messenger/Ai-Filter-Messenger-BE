@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Getter
@@ -19,6 +20,7 @@ public class ChatRoomResponse {
     private List<String> profileImages;
     private int userCount;
     private String recentMessage;
+    private ZonedDateTime createAt;
     private boolean isCheck;
     private int NotificationCount;
 }
