@@ -24,6 +24,8 @@ import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.*;
+
 @SpringBootTest
 @Slf4j
 public class ChatTest {
@@ -104,8 +106,8 @@ public class ChatTest {
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test1");
         Message message = messageService.recentMessage(room.getChatRoomId());
 
-        Assertions.assertThat(message.getMessage()).isEqualTo("test1님이 test2님을 초대하였습니다.");
-        Assertions.assertThat(roomResponses.size()).isEqualTo(1);
+        assertThat(message.getMessage()).isEqualTo("test1님이 test2님을 초대하였습니다.");
+        assertThat(roomResponses.size()).isEqualTo(1);
     }
 
     @Test
@@ -126,8 +128,8 @@ public class ChatTest {
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test1");
         Message message = messageService.recentMessage(room.getChatRoomId());
 
-        Assertions.assertThat(message.getMessage()).isEqualTo("test1님이 test2님과 test3님과 test4님을 초대하였습니다.");
-        Assertions.assertThat(roomResponses.size()).isEqualTo(1);
+        assertThat(message.getMessage()).isEqualTo("test1님이 test2님과 test3님과 test4님을 초대하였습니다.");
+        assertThat(roomResponses.size()).isEqualTo(1);
     }
 
     @Test
@@ -142,7 +144,7 @@ public class ChatTest {
                 .build();
 
         chatRoomService.createRoom(chatRegister);
-        Assertions.assertThatThrownBy(() -> chatRoomService.createRoom(chatRegister))
+        assertThatThrownBy(() -> chatRoomService.createRoom(chatRegister))
                 .isInstanceOf(DuplicateChatRoomNameException.class)
                 .hasMessage("이미 존재하는 오픈채팅방입니다.");
     }
@@ -161,7 +163,7 @@ public class ChatTest {
         chatRoomService.createRoom(chatRegister);
         ChatRoom room = chatRoomService.createRoom(chatRegister);
 
-        Assertions.assertThat(room.getRoomName()).isEqualTo("채팅방1번");
+        assertThat(room.getRoomName()).isEqualTo("채팅방1번");
     }
 
     @Test
@@ -187,9 +189,9 @@ public class ChatTest {
 
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test3");
 
-        Assertions.assertThat(roomResponses.size()).isEqualTo(1);
-        Assertions.assertThat(roomResponses.get(0).getUserCount()).isEqualTo(3);
-        Assertions.assertThat(roomResponses.get(0).getRoomName()).isEqualTo("채팅방1번");
+        assertThat(roomResponses.size()).isEqualTo(1);
+        assertThat(roomResponses.get(0).getUserCount()).isEqualTo(3);
+        assertThat(roomResponses.get(0).getRoomName()).isEqualTo("채팅방1번");
     }
 
     @Test
@@ -217,10 +219,10 @@ public class ChatTest {
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test3");
         Message message = messageService.recentMessage(room.getChatRoomId());
 
-        Assertions.assertThat(message.getMessage()).isEqualTo("test1님이 test3님을 초대하였습니다.");
-        Assertions.assertThat(roomResponses.size()).isEqualTo(1);
-        Assertions.assertThat(roomResponses.get(0).getUserCount()).isEqualTo(3);
-        Assertions.assertThat(roomResponses.get(0).getRoomName()).isEqualTo("test1, test2, test3");
+        assertThat(message.getMessage()).isEqualTo("test1님이 test3님을 초대하였습니다.");
+        assertThat(roomResponses.size()).isEqualTo(1);
+        assertThat(roomResponses.get(0).getUserCount()).isEqualTo(3);
+        assertThat(roomResponses.get(0).getRoomName()).isEqualTo("test1, test2, test3");
     }
 
     @Test
@@ -248,10 +250,10 @@ public class ChatTest {
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test3");
         Message message = messageService.recentMessage(room.getChatRoomId());
 
-        Assertions.assertThat(message.getMessage()).isEqualTo("test1님이 test3님과 test4님을 초대하였습니다.");
-        Assertions.assertThat(roomResponses.size()).isEqualTo(1);
-        Assertions.assertThat(roomResponses.get(0).getUserCount()).isEqualTo(4);
-        Assertions.assertThat(roomResponses.get(0).getRoomName()).isEqualTo("test1, test2, test3, test4");
+        assertThat(message.getMessage()).isEqualTo("test1님이 test3님과 test4님을 초대하였습니다.");
+        assertThat(roomResponses.size()).isEqualTo(1);
+        assertThat(roomResponses.get(0).getUserCount()).isEqualTo(4);
+        assertThat(roomResponses.get(0).getRoomName()).isEqualTo("test1, test2, test3, test4");
     }
 
     //user 로직 추가하면 테스트 추가해야함
@@ -277,9 +279,9 @@ public class ChatTest {
 
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test3");
 
-        Assertions.assertThat(roomResponses.size()).isEqualTo(1);
-        Assertions.assertThat(roomResponses.get(0).getUserCount()).isEqualTo(3);
-        Assertions.assertThat(roomResponses.get(0).getRoomName()).isEqualTo("오픈채팅방");
+        assertThat(roomResponses.size()).isEqualTo(1);
+        assertThat(roomResponses.get(0).getUserCount()).isEqualTo(3);
+        assertThat(roomResponses.get(0).getRoomName()).isEqualTo("오픈채팅방");
     }
 
     @Test
@@ -305,9 +307,9 @@ public class ChatTest {
         List<ChatRoomResponse> roomResponsesTest1 = chatRoomService.userChatRoomList("test1");
         List<ChatRoomResponse> roomResponsesTest2 = chatRoomService.userChatRoomList("test2");
 
-        Assertions.assertThat(roomResponsesTest1.get(0).getRoomName()).isEqualTo("test1");
-        Assertions.assertThat(roomResponsesTest1.get(0).getUserCount()).isEqualTo(1);
-        Assertions.assertThat(roomResponsesTest2.size()).isEqualTo(0);
+        assertThat(roomResponsesTest1.get(0).getRoomName()).isEqualTo("test1");
+        assertThat(roomResponsesTest1.get(0).getUserCount()).isEqualTo(1);
+        assertThat(roomResponsesTest2.size()).isEqualTo(0);
     }
 
     @Test
@@ -337,7 +339,7 @@ public class ChatTest {
 
         List<Message> messages = messageService.chatRoomMessages(room.getChatRoomId(), "test1");
 
-        Assertions.assertThat(messages.size()).isEqualTo(6);
+        assertThat(messages.size()).isEqualTo(6);
     }
 
     @Test
@@ -382,7 +384,7 @@ public class ChatTest {
 
         List<Message> messages = messageService.chatRoomMessages(room.getChatRoomId(), "test3");
 
-        Assertions.assertThat(messages.size()).isEqualTo(3);
+        assertThat(messages.size()).isEqualTo(3);
     }
 
     @Test
@@ -412,7 +414,7 @@ public class ChatTest {
         }
 
         Message message = messageService.recentMessage(room.getChatRoomId());
-        Assertions.assertThat(message.getMessage()).isEqualTo("안녕하세요4");
+        assertThat(message.getMessage()).isEqualTo("안녕하세요4");
     }
 
     @Test
@@ -440,7 +442,7 @@ public class ChatTest {
             messageService.sendMessage(message);
             Thread.sleep(1000);
             UserChatRoom userChatRoomByChatRoomAndUser = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2);
-            Assertions.assertThat(userChatRoomByChatRoomAndUser.getNotificationCount()).isEqualTo(i+1);
+            assertThat(userChatRoomByChatRoomAndUser.getNotificationCount()).isEqualTo(i+1);
         }
     }
 
@@ -470,7 +472,7 @@ public class ChatTest {
             Thread.sleep(1000);
         }
         UserChatRoom userChatRoomByChatRoomAndUser = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2);
-        Assertions.assertThat(userChatRoomByChatRoomAndUser.getNotificationCount()).isEqualTo(5);
+        assertThat(userChatRoomByChatRoomAndUser.getNotificationCount()).isEqualTo(5);
 
         ChatRoomRequest.notification notification = ChatRoomRequest.notification.builder()
                 .roomId(room.getChatRoomId())
@@ -478,6 +480,6 @@ public class ChatTest {
                 .build();
         messageService.resetNotification(notification);
         UserChatRoom userChatRoomByChatRoomAndUser2 = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2);
-        Assertions.assertThat(userChatRoomByChatRoomAndUser2.getNotificationCount()).isEqualTo(0);
+        assertThat(userChatRoomByChatRoomAndUser2.getNotificationCount()).isEqualTo(0);
     }
 }
