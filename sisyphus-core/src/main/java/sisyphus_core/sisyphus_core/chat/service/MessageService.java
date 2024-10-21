@@ -60,7 +60,7 @@ public class MessageService {
         template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
     }
 
-    public List<Message> chatRoomMessages(Long chatRoomId, String nickname){
+    public List<Message> chatRoomMessages(Long chatRoomId, String loginId){
         String key = "room:" + chatRoomId;
         List<Object> allMessagesRaw = redisTemplate.opsForList().range(key, 0, -1);
         List<Message> allMessages = new ArrayList<>();
@@ -72,7 +72,7 @@ public class MessageService {
             allMessages.add(message);
         }
 
-        String joinKey = "userJoin:" + chatRoomId + ":" + nickname;
+        String joinKey = "userJoin:" + chatRoomId + ":" + loginId;
         Object userJoinEpochObj = redisTemplate.opsForValue().get(joinKey);
 
         Long userJoinEpoch = null;

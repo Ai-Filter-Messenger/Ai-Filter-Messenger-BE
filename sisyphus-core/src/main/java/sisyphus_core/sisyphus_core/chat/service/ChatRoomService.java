@@ -235,7 +235,7 @@ public class ChatRoomService {
         redisTemplate.delete(joinKey);
     }
 
-    //ResponseChatRoom으로 변환
+    //ResponseChatRoom으로 변환 -> 채팅방리스트 DTO
     @Transactional
     public List<ChatRoomResponse> toResponseChatRoom(List<UserChatRoom> userChatRoomsByUser) {
         List<ChatRoomResponse> roomResponses = new ArrayList<>();
@@ -246,6 +246,7 @@ public class ChatRoomService {
 
             Message message = messageService.recentMessage(chatRoom.getChatRoomId());
             String recentMessage = "";
+            ZonedDateTime createAt = null;
             if(message != null){
                 recentMessage = message.getMessage();
             }
@@ -261,6 +262,7 @@ public class ChatRoomService {
                     .profileImages(profileImageUrls)
                     .userCount(chatRoom.getUserCount())
                     .recentMessage(recentMessage)
+                    .createAt(createAt)
                     .NotificationCount(userChatRoom.getNotificationCount())
                     .isCheck(false)
                     .build();
@@ -271,6 +273,7 @@ public class ChatRoomService {
         return roomResponses;
     }
 
+    //실시간 채팅방 생성시 필요한 DTO
     @Transactional
     public ChatRoomResponse toResponseChatRoom(ChatRoom chatRoom) {
         List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
