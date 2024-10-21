@@ -29,4 +29,13 @@ public class UserRequest {
         private String loginId;
         private String nickname;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class find{
+        private String loginId;
+        private String email;
+    }
 }

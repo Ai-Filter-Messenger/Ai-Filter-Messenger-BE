@@ -235,9 +235,31 @@ public class ChatRoomService {
         redisTemplate.delete(joinKey);
     }
 
+    //회원탈퇴 시 채팅방 정보 변경
+    @Transactional
+    public void withdrawalUser(List<UserChatRoom> userChatRoomList, String nickname){
+        for (UserChatRoom userChatRoom : userChatRoomList) {
+            ChatRoom chatRoom = userChatRoom.getChatRoom();
+            chatRoom.leaveUser();
+            if(!chatRoom.isCustomRoomName()) {
+                String renewalChatRoomName = chatRoom.getRoomName().replace(nickname, "").trim();
+
+                renewalChatRoomName = renewalChatRoomName.replaceAll(",\\s*,", ", ")
+                        .replaceAll(",\\s*$", "")
+                        .replaceAll("^\\s*,", "")
+                        .trim();
+
+                chatRoom.setRoomName(renewalChatRoomName);
+            }
+
+            if(chatRoom.getUserCount() == 0) chatRoomRepository.deleteById(chatRoom.getChatRoomId());
+            else chatRoomRepository.save(chatRoom);
+        }
+    }
+
     //ResponseChatRoom으로 변환 -> 채팅방리스트 DTO
     @Transactional
-    public List<ChatRoomResponse> toResponseChatRoom(List<UserChatRoom> userChatRoomsByUser) {
+    protected List<ChatRoomResponse> toResponseChatRoom(List<UserChatRoom> userChatRoomsByUser) {
         List<ChatRoomResponse> roomResponses = new ArrayList<>();
         for (UserChatRoom userChatRoom : userChatRoomsByUser) {
             List<String> profileImageUrls = new ArrayList<>();
@@ -275,7 +297,7 @@ public class ChatRoomService {
 
     //실시간 채팅방 생성시 필요한 DTO
     @Transactional
-    public ChatRoomResponse toResponseChatRoom(ChatRoom chatRoom) {
+    protected ChatRoomResponse toResponseChatRoom(ChatRoom chatRoom) {
         List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
         List<String> profileImageUrls = new ArrayList<>();
 

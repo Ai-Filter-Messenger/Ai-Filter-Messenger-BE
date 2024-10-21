@@ -4,11 +4,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
+import sisyphus_core.sisyphus_core.auth.model.dto.UserResponse;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
 
 @RestController
@@ -19,19 +18,38 @@ public class UserController {
 
     private final UserService userService;
 
+    //회원가입
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody @Valid UserRequest.register register){
         userService.register(register);
-        return ResponseEntity.ok("계정 생성에 성공하였습니다.");
+        return ResponseEntity.ok("회원가입에 성공하였습니다.");
     }
 
-    @PostMapping("/check/loginId")
+    //회원탈퇴
+    @PostMapping("/withdrawal")
+    public ResponseEntity<String> withdrawal(Authentication auth){
+        userService.withdrawal(auth.getName());
+        return ResponseEntity.ok("회원탈퇴에 성공하였습니다.");
+    }
+
+    //아이디찾기
+    @GetMapping("/find/loginId")
+    public ResponseEntity<UserResponse.find> findLoginId(@RequestBody @Valid UserRequest.find find){
+        return ResponseEntity.ok().body(userService.findLoginId(find.getEmail()));
+    }
+    //비밀번호찾기
+    //메일 인증
+    //코드 인증
+
+    //로그인아이디 중복체크
+    @GetMapping("/check/loginId")
     public ResponseEntity<String> checkLoginId(@RequestBody @Valid UserRequest.check check){
         userService.checkDuplicateLoginId(check.getLoginId());
         return ResponseEntity.ok("사용 가능한 아이디입니다.");
     }
 
-    @PostMapping("/check/nickname")
+    //닉네임 중복체크
+    @GetMapping("/check/nickname")
     public ResponseEntity<String> checkNickname(@RequestBody @Valid UserRequest.check check){
         userService.checkDuplicateNickname(check.getNickname());
         return ResponseEntity.ok("사용 가능한 닉네임입니다.");
