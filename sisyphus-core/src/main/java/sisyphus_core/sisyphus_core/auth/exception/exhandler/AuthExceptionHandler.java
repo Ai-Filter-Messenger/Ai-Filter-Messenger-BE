@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserException;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserLoginIdException;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserNicknameException;
+import sisyphus_core.sisyphus_core.auth.exception.InvalidAuthCodeException;
 
 @ControllerAdvice
 public class AuthExceptionHandler {
@@ -23,6 +24,11 @@ public class AuthExceptionHandler {
 
     @ExceptionHandler(DuplicateUserNicknameException.class)
     public ResponseEntity<String> handleDuplicateUserNicknameException(DuplicateUserNicknameException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidAuthCodeException.class)
+    public ResponseEntity<String> handleInvalidAuthCodeException(InvalidAuthCodeException ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }
