@@ -1,11 +1,13 @@
 package sisyphus_core.sisyphus_core.auth.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import sisyphus_core.sisyphus_core.auth.model.dto.TokenResponse;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserResponse;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
@@ -23,6 +25,19 @@ public class UserController {
     public ResponseEntity<String> register(@RequestBody @Valid UserRequest.register register){
         userService.register(register);
         return ResponseEntity.ok("회원가입에 성공하였습니다.");
+    }
+
+    //로그인
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponse> login(@RequestBody @Valid UserRequest.login login, HttpServletResponse response) {
+        return ResponseEntity.ok().body(userService.authenticate(login, response));
+    }
+
+    //로그아웃
+    @GetMapping("/logout")
+    public ResponseEntity<String> logout(Authentication auth, HttpServletResponse response){
+        userService.unAuthenticate(auth.getName(), response);
+        return ResponseEntity.ok("로그아웃에 성공하였습니다.");
     }
 
     //회원탈퇴

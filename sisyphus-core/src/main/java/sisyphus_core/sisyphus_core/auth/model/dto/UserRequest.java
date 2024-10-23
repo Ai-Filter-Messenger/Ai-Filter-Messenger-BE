@@ -25,6 +25,15 @@ public class UserRequest {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class login{
+        private String loginId;
+        private String password;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class check{
         private String loginId;
         private String nickname;

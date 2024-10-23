@@ -1,18 +1,24 @@
 package sisyphus_core.sisyphus_core.auth.service;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserException;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserLoginIdException;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserNicknameException;
+import sisyphus_core.sisyphus_core.auth.exception.UserPasswordNotMatchException;
+import sisyphus_core.sisyphus_core.auth.model.CustomUserDetails;
+import sisyphus_core.sisyphus_core.auth.model.Token;
 import sisyphus_core.sisyphus_core.auth.model.User;
-import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
-import sisyphus_core.sisyphus_core.auth.model.dto.UserResponse;
-import sisyphus_core.sisyphus_core.auth.model.dto.UserRole;
-import sisyphus_core.sisyphus_core.auth.model.dto.UserState;
+import sisyphus_core.sisyphus_core.auth.model.dto.*;
+import sisyphus_core.sisyphus_core.auth.model.jwt.JwtUtil;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
 import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
 import sisyphus_core.sisyphus_core.chat.repository.UserChatRoomRepository;
@@ -23,11 +29,15 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
     private final ChatRoomService chatRoomService;
     private final UserChatRoomRepository userChatRoomRepository;
+    private final CustomUserDetailService customUserDetailService;
+    private final TokenService tokenService;
+    private final JwtUtil jwtUtil;
 
     @Value("${default.profile.image.url}")
     private String defProfileImage;
@@ -54,11 +64,47 @@ public class UserService {
         userRepository.save(user);
     }
 
+    //로그인
+    @Transactional
+    public TokenResponse authenticate(UserRequest.login login, HttpServletResponse response){
+        CustomUserDetails userDetails = (CustomUserDetails) customUserDetailService.loadUserByUsername(login.getLoginId());
+
+        //로그인 비밀번호와 기존 비밀번호 검증
+        if (!userDetails.getPassword().equals(login.getPassword())) {
+            throw new UserPasswordNotMatchException("아이디와 비밀번호가 일치하지않습니다.");
+        }
+
+        String accessToken = jwtUtil.getAccessToken(userDetails);
+        Token existingToken = tokenService.findToken(login.getLoginId());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        log.info("Authentication : {}", SecurityContextHolder.getContext().getAuthentication());
+        response.addHeader("Authorization", "Bearer " + accessToken);
+        if(existingToken == null){
+            String refreshToken = jwtUtil.getRefreshToken(userDetails);
+            Token token = Token.builder().accessToken(accessToken).refreshToken(refreshToken).loginId(login.getLoginId()).build();
+            tokenService.saveToken(token);
+        }else{
+            tokenService.updateAccessToken(existingToken.getRefreshToken(), accessToken);
+        }
+
+        return new TokenResponse(accessToken);
+    }
+
+    //로그아웃
+    @Transactional
+    public void unAuthenticate(String loginId, HttpServletResponse response){
+        SecurityContextHolder.clearContext();
+        tokenService.deleteToken(loginId);
+        response.setHeader("Authorization", null);
+    }
+
     //회원탈퇴
     @Transactional
     public void withdrawal(String loginId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 회원이 없습니다."));
         List<UserChatRoom> userChatRoomsByUser = userChatRoomRepository.findUserChatRoomsByUser(user);
+        tokenService.deleteToken(loginId);
         userChatRoomRepository.deleteAllByUser(user);
         chatRoomService.withdrawalUser(userChatRoomsByUser, user.getNickname());
         userRepository.deleteByLoginId(loginId);

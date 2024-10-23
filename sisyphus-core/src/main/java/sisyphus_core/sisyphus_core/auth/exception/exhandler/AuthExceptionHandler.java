@@ -4,10 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserException;
-import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserLoginIdException;
-import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserNicknameException;
-import sisyphus_core.sisyphus_core.auth.exception.InvalidAuthCodeException;
+import sisyphus_core.sisyphus_core.auth.exception.*;
 
 @ControllerAdvice
 public class AuthExceptionHandler {
@@ -29,6 +26,11 @@ public class AuthExceptionHandler {
 
     @ExceptionHandler(InvalidAuthCodeException.class)
     public ResponseEntity<String> handleInvalidAuthCodeException(InvalidAuthCodeException ex){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+    }
+
+    @ExceptionHandler(UserPasswordNotMatchException.class)
+    public ResponseEntity<String> handleUserPasswordNotMatchException(UserPasswordNotMatchException ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }
