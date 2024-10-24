@@ -158,6 +158,25 @@ public class AuthTest {
     }
 
     @Test
+    @DisplayName("회원 정보 변경")
+    void userModify(){
+        UserRequest.modify modify = UserRequest.modify.builder()
+                .password("12345")
+                .profileImageUrl("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNDA5MDVfMTYw%2FMDAxNzI1NDcxNTA3MDEw.7GrjsYaNU2A9K2E-Wc4tDnK5x1AEotXYmtMgblobJyAg.OWcwAGjb2UML-AfJFz74QZWK1hOgl_nsgz90APbzbNMg.PNG%2F00-01-.png&type=a340")
+                .email("test10@test.com")
+                .describe("describe")
+                .nickname("테스트10").build();
+        userService.modify(modify, "테스트1");
+
+        User test10 = userService.findByNickname("테스트10");
+        assertThat(test10).isNotNull();
+        assertThat(test10.getEmail()).isEqualTo("test10@test.com");
+        assertThat(test10.getDescribe()).isEqualTo("describe");
+        assertThat(test10.getPassword()).isEqualTo("12345");
+        assertThat(test10.getProfileImageUrl()).isEqualTo("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNDA5MDVfMTYw%2FMDAxNzI1NDcxNTA3MDEw.7GrjsYaNU2A9K2E-Wc4tDnK5x1AEotXYmtMgblobJyAg.OWcwAGjb2UML-AfJFz74QZWK1hOgl_nsgz90APbzbNMg.PNG%2F00-01-.png&type=a340");
+    }
+
+    @Test
     @DisplayName("회원 탈퇴")
     void userWithdrawal(){
         userService.withdrawal("테스트1");
