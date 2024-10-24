@@ -21,6 +21,6 @@ public class ChatRoomResponse {
     private int userCount;
     private String recentMessage;
     private ZonedDateTime createAt;
-    private boolean isCheck;
+    private boolean isFix;
     private int NotificationCount;
 }

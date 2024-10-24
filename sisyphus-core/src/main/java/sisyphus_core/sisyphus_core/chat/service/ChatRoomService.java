@@ -36,6 +36,8 @@ public class ChatRoomService {
     private final MessageService messageService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SimpMessagingTemplate template;
+    private final String CHAT_ROOM_FIX = "채팅방을 고정하였습니다.";
+    private final String CHAT_ROOM_UNFIX = "채팅방 고정을 해제하였습니다.";
 
     //채팅 방 생성
     @Transactional
@@ -84,7 +86,7 @@ public class ChatRoomService {
             UserChatRoom userChatRoom = UserChatRoom.builder()
                     .chatRoom(chatRoom)
                     .user(inviteUser)
-                    .isCheck(false)
+                    .isFix(false)
                     .NotificationCount(0)
                     .build();
             userChatRoomRepository.save(userChatRoom);
@@ -94,7 +96,7 @@ public class ChatRoomService {
         UserChatRoom userChatRoom = UserChatRoom.builder()
                 .chatRoom(chatRoom)
                 .user(user)
-                .isCheck(false)
+                .isFix(false)
                 .NotificationCount(0)
                 .build();
 
@@ -163,7 +165,7 @@ public class ChatRoomService {
         UserChatRoom userChatRoom = UserChatRoom.builder()
                 .chatRoom(chatRoom)
                 .user(user)
-                .isCheck(false)
+                .isFix(false)
                 .NotificationCount(0)
                 .build();
 
@@ -195,7 +197,7 @@ public class ChatRoomService {
             UserChatRoom userChatRoom = UserChatRoom.builder()
                     .chatRoom(chatRoom)
                     .user(user)
-                    .isCheck(false)
+                    .isFix(false)
                     .NotificationCount(0)
                     .build();
 
@@ -282,6 +284,21 @@ public class ChatRoomService {
         }
     }
 
+    //채팅방 고정
+    @Transactional
+    public String toggleChatRoom(Long chatRoomId, String loginId){
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        UserChatRoom userChatRoom = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(chatRoom, user).get();
+        if(!userChatRoom.isFix()){
+            userChatRoom.setFix(true);
+            return CHAT_ROOM_FIX;
+        }else{
+            userChatRoom.setFix(false);
+            return CHAT_ROOM_UNFIX;
+        }
+    }
+
     //ResponseChatRoom으로 변환 -> 채팅방리스트 DTO
     @Transactional
     protected List<ChatRoomResponse> toResponseChatRoom(List<UserChatRoom> userChatRoomsByUser) {
@@ -293,7 +310,6 @@ public class ChatRoomService {
 
             Message message = messageService.recentMessage(chatRoom.getChatRoomId());
             String recentMessage = "";
-            ZonedDateTime createAt = null;
             if(message != null){
                 recentMessage = message.getMessage();
             }
@@ -309,9 +325,9 @@ public class ChatRoomService {
                     .profileImages(profileImageUrls)
                     .userCount(chatRoom.getUserCount())
                     .recentMessage(recentMessage)
-                    .createAt(createAt)
+                    .createAt(chatRoom.getCreateAt())
                     .NotificationCount(userChatRoom.getNotificationCount())
-                    .isCheck(false)
+                    .isFix(userChatRoom.isFix())
                     .build();
 
             roomResponses.add(chatRoomResponse);
@@ -343,7 +359,7 @@ public class ChatRoomService {
                 .chatRoomId(chatRoom.getChatRoomId())
                 .type(chatRoom.getType())
                 .NotificationCount(0)
-                .isCheck(false)
+                .isFix(false)
                 .profileImages(profileImageUrls)
                 .recentMessage(recentMessage)
                 .createAt(createAt)
