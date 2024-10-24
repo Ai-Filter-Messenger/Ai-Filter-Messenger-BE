@@ -221,6 +221,64 @@ public class ChatTest {
     }
 
     @Test
+    @DisplayName("회원 닉네임 변경 논커스텀 채팅방 이름 변경")
+    void modifyChatRoomNameByModifyNickname(){
+        String[] nicknames = new String[]{"test2"};
+        ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
+                .loginId("test1")
+                .nicknames(nicknames)
+                .type("general")
+                .build();
+        chatRoomService.createChatRoom(chatRegister);
+
+        UserRequest.modify modify = UserRequest.modify.builder()
+                .password("12345")
+                .profileImageUrl("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNDA5MDVfMTYw%2FMDAxNzI1NDcxNTA3MDEw.7GrjsYaNU2A9K2E-Wc4tDnK5x1AEotXYmtMgblobJyAg.OWcwAGjb2UML-AfJFz74QZWK1hOgl_nsgz90APbzbNMg.PNG%2F00-01-.png&type=a340")
+                .email("test10@test.com")
+                .describe("describe")
+                .nickname("test10").build();
+        userService.modify(modify, "test1");
+        ChatRoom room = chatRoomService.findByRoomName("test10, test2");
+
+        assertThat(room).isNotNull();
+    }
+
+    @Test
+    @DisplayName("회원 닉네임 변경 시 보내는사람 닉네임 변경")
+    void modifySenderNameByModifyNickname() throws InterruptedException {
+        String[] nicknames = new String[]{"test2"};
+        ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
+                .loginId("test1")
+                .nicknames(nicknames)
+                .type("general")
+                .build();
+        chatRoomService.createChatRoom(chatRegister);
+
+        ChatRoom room = chatRoomService.findByRoomName("test1, test2");
+
+        Message message = Message.builder()
+                .type(MessageType.MESSAGE)
+                .roomId(room.getChatRoomId())
+                .message("안녕하세요")
+                .senderName("test1")
+                .build();
+
+        messageService.sendMessage(message);
+        Thread.sleep(1000);
+
+        UserRequest.modify modify = UserRequest.modify.builder()
+                .password("12345")
+                .profileImageUrl("https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNDA5MDVfMTYw%2FMDAxNzI1NDcxNTA3MDEw.7GrjsYaNU2A9K2E-Wc4tDnK5x1AEotXYmtMgblobJyAg.OWcwAGjb2UML-AfJFz74QZWK1hOgl_nsgz90APbzbNMg.PNG%2F00-01-.png&type=a340")
+                .email("test10@test.com")
+                .describe("describe")
+                .nickname("test10").build();
+        userService.modify(modify, "test1");
+
+        Message message1 = messageService.recentMessage(room.getChatRoomId());
+        assertThat(message1.getSenderName()).isEqualTo("test10");
+    }
+
+    @Test
     @DisplayName("커스텀룸네임 채팅방 한명 초대")
     void inviteCustomChatRoom(){
         String[] nicknames = new String[]{"test2"};
