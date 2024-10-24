@@ -60,17 +60,25 @@ public class MessageService {
         template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
     }
 
+    public void modifySenderName(String senderName, String newNickname, Long chatRoomId){
+        String key = "room:" + chatRoomId;
+        List<Message> allMessages = findMessagesAboutChatRoom(key);
+
+        for (Message allMessage : allMessages) {
+            if(allMessage.getSenderName().equals(senderName)){
+                allMessage.setSenderName(newNickname);
+            }
+        }
+
+        redisTemplate.delete(key);
+        for (Message message : allMessages) {
+            redisTemplate.opsForList().rightPush(key, message);
+        }
+    }
+
     public List<Message> chatRoomMessages(Long chatRoomId, String loginId){
         String key = "room:" + chatRoomId;
-        List<Object> allMessagesRaw = redisTemplate.opsForList().range(key, 0, -1);
-        List<Message> allMessages = new ArrayList<>();
-
-        // LinkedHashMap을 Message로 변환
-        for (Object rawMessage : allMessagesRaw) {
-            // 강제로 Message 객체로 변환
-            Message message = objectMapper.convertValue(rawMessage, Message.class);
-            allMessages.add(message);
-        }
+        List<Message> allMessages = findMessagesAboutChatRoom(key);
 
         String joinKey = "userJoin:" + chatRoomId + ":" + loginId;
         Object userJoinEpochObj = redisTemplate.opsForValue().get(joinKey);
@@ -101,6 +109,19 @@ public class MessageService {
         Object result = redisTemplate.opsForList().index(key, 0);
 
         return objectMapper.convertValue(result, Message.class);
+    }
+
+    public List<Message> findMessagesAboutChatRoom(String key){
+        List<Object> allMessagesRaw = redisTemplate.opsForList().range(key, 0, -1);
+        List<Message> allMessages = new ArrayList<>();
+
+        // LinkedHashMap을 Message로 변환
+        for (Object rawMessage : allMessagesRaw) {
+            // 강제로 Message 객체로 변환
+            Message message = objectMapper.convertValue(rawMessage, Message.class);
+            allMessages.add(message);
+        }
+        return allMessages;
     }
 
     @Transactional

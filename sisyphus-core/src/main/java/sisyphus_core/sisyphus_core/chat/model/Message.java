@@ -28,6 +28,7 @@ public class Message {
     private String message;
 
     @Indexed
+    @Setter
     private String senderName;
 
     @Indexed
