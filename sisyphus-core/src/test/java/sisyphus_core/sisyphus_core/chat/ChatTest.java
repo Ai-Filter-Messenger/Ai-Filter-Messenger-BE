@@ -574,4 +574,24 @@ public class ChatTest {
         UserChatRoom userChatRoomByChatRoomAndUser2 = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2).get();
         assertThat(userChatRoomByChatRoomAndUser2.getNotificationCount()).isEqualTo(0);
     }
+
+    @Test
+    @DisplayName("채팅방 고정/고정해제")
+    void fixChatRoom(){
+        String[] nicknames = new String[]{"test2"};
+        ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
+                .roomName("채팅방 고정/고정해제 방")
+                .nicknames(nicknames)
+                .type("general")
+                .build();
+        chatRoomService.createChatRoom(chatRegister, "test1");
+
+        ChatRoom room = chatRoomService.findByRoomName("채팅방 고정/고정해제 방");
+
+        String fixChatRoom = chatRoomService.toggleChatRoom(room.getChatRoomId(), "test1");
+        assertThat(fixChatRoom).isEqualTo("채팅방을 고정하였습니다.");
+
+        String unfixChatRoom = chatRoomService.toggleChatRoom(room.getChatRoomId(), "test1");
+        assertThat(unfixChatRoom).isEqualTo("채팅방 고정을 해제하였습니다.");
+    }
 }
