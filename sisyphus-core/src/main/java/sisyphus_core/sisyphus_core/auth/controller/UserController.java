@@ -40,8 +40,14 @@ public class UserController {
         return ResponseEntity.ok("로그아웃에 성공하였습니다.");
     }
 
+    @PutMapping("/modify")
+    public ResponseEntity<String> modify(@RequestBody @Valid UserRequest.modify modify, Authentication auth){
+        userService.modify(modify, auth.getName());
+        return ResponseEntity.ok("유저의 정보가 변경되었습니다.");
+    }
+
     //회원탈퇴
-    @PostMapping("/withdrawal")
+    @DeleteMapping("/withdrawal")
     public ResponseEntity<String> withdrawal(Authentication auth){
         userService.withdrawal(auth.getName());
         return ResponseEntity.ok("회원탈퇴에 성공하였습니다.");

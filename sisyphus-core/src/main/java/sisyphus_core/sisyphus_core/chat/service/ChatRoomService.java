@@ -136,7 +136,7 @@ public class ChatRoomService {
 
         for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
             User user = userChatRoom.getUser();
-            template.convertAndSend("/queue/chatroom/list/" + user.getName(), toResponseChatRoom(chatRoom));
+            template.convertAndSend("/queue/chatroom/list/" + user.getNickname(), toResponseChatRoom(chatRoom));
         }
     }
 

@@ -20,9 +20,12 @@ import sisyphus_core.sisyphus_core.auth.model.User;
 import sisyphus_core.sisyphus_core.auth.model.dto.*;
 import sisyphus_core.sisyphus_core.auth.model.jwt.JwtUtil;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
+import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
+import sisyphus_core.sisyphus_core.chat.repository.ChatRoomRepository;
 import sisyphus_core.sisyphus_core.chat.repository.UserChatRoomRepository;
 import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
+import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +41,8 @@ public class UserService {
     private final CustomUserDetailService customUserDetailService;
     private final TokenService tokenService;
     private final JwtUtil jwtUtil;
+    private final ChatRoomRepository chatRoomRepository;
+    private final MessageService messageService;
 
     @Value("${default.profile.image.url}")
     private String defProfileImage;
@@ -97,6 +102,25 @@ public class UserService {
         SecurityContextHolder.clearContext();
         tokenService.deleteToken(loginId);
         response.setHeader("Authorization", null);
+    }
+
+    //회원 정보 변경
+    @Transactional
+    public void modify(UserRequest.modify modify, String loginId){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 회원이 없습니다."));
+        List<UserChatRoom> userChatRoomsByUser = userChatRoomRepository.findUserChatRoomsByUser(user);
+        for (UserChatRoom userChatRoom : userChatRoomsByUser) {
+            ChatRoom chatRoom = userChatRoom.getChatRoom();
+            if(!chatRoom.isCustomRoomName()){
+                String replaceRoomName = chatRoom.getRoomName().replace(user.getNickname(), modify.getNickname());
+                chatRoom.setRoomName(replaceRoomName);
+                chatRoomRepository.save(chatRoom);
+            }
+            messageService.modifySenderName(user.getNickname(), modify.getNickname(), chatRoom.getChatRoomId());
+        }
+
+        user.modify(modify);
+        userRepository.save(user);
     }
 
     //회원탈퇴
