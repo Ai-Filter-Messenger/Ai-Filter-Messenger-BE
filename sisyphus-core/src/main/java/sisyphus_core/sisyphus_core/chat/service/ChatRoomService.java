@@ -39,7 +39,7 @@ public class ChatRoomService {
 
     //채팅 방 생성
     @Transactional
-    public ChatRoom createRoom(ChatRoomRequest.register register){
+    public ChatRoom createChatRoom(ChatRoomRequest.register register){
         String loginId = register.getLoginId();
         String roomName = register.getRoomName();
         String[] nicknames = register.getNicknames();
@@ -117,6 +117,27 @@ public class ChatRoomService {
         messageService.join(message);
         template.convertAndSend("/queue/chatroom/list/" + user.getNickname(), toResponseChatRoom(chatRoom));
         return chatRoom;
+    }
+
+    //방 정보 변경
+    @Transactional
+    public void modifyChatRoom(ChatRoomRequest.modify modify){
+        ChatRoom chatRoom = chatRoomRepository.findById(modify.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+        List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
+        if(chatRoom.getType() == ChatRoomType.OPEN){
+            if(chatRoomRepository.findByRoomName(modify.getNewRoomName()).isPresent()){
+                throw new DuplicateChatRoomNameException("이미 존재하는 오픈채팅방입니다.");
+            }
+        }
+
+        chatRoom.setRoomName(modify.getNewRoomName());
+        if(!chatRoom.isCustomRoomName()) chatRoom.setCustomRoomName(true);
+        chatRoomRepository.save(chatRoom);
+
+        for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
+            User user = userChatRoom.getUser();
+            template.convertAndSend("/queue/chatroom/list/" + user.getName(), toResponseChatRoom(chatRoom));
+        }
     }
 
     //유저 채팅방 조회

@@ -27,8 +27,14 @@ public class ChatController {
     //채팅방 생성
     @PostMapping("/create")
     public ResponseEntity<ChatRoom> createChatRoom(@RequestBody @Valid ChatRoomRequest.register register){
-        ChatRoom room = chatRoomService.createRoom(register);
+        ChatRoom room = chatRoomService.createChatRoom(register);
         return ResponseEntity.ok().body(room);
+    }
+
+    @PutMapping("/modify")
+    public ResponseEntity<String> modifyChatRoom(@RequestBody @Valid ChatRoomRequest.modify modify){
+        chatRoomService.modifyChatRoom(modify);
+        return ResponseEntity.ok("방 정보가 변경되었습니다.");
     }
 
     //채팅방 초대
@@ -39,14 +45,14 @@ public class ChatController {
     }
 
     //채팅방 참여
-    @PostMapping("/join")
+    @PutMapping("/join")
     public ResponseEntity<String> joinChatRoom(Authentication auth, @RequestBody @Valid ChatRoomRequest.join join){
         chatRoomService.joinChatRoom(auth.getName(), join.getChatRoomId());
         return ResponseEntity.ok("방에 입장하였습니다.");
     }
 
     //채팅방 나가기
-    @PostMapping("/leave")
+    @PutMapping("/leave")
     public ResponseEntity<String> leaveChatRoom(@RequestBody @Valid ChatRoomRequest.leave leave){
         chatRoomService.leaveChatRoom(leave);
         return ResponseEntity.ok("방에서 퇴장하셨습니다.");

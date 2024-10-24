@@ -22,6 +22,15 @@ public class ChatRoomRequest {
     @AllArgsConstructor
     @NoArgsConstructor
     @Builder
+    public static class modify{
+        private Long chatRoomId;
+        private String newRoomName;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
     public static class invite{
         private Long chatRoomId;
         private String[] nicknames;
