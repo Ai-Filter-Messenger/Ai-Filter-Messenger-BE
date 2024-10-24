@@ -190,12 +190,11 @@ public class AuthTest {
     void updateChatRoomByUserWithdrawal(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("테스트1")
                 .nicknames(nicknames)
                 .type("open")
                 .build();
 
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "테스트1");
 
         userService.withdrawal("테스트1");
         ChatRoom room = chatRoomService.findByRoomName("test2");

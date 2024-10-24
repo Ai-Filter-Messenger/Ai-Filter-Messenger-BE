@@ -93,12 +93,11 @@ public class ChatTest {
     void createChatRoom1To1() throws InterruptedException {
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방1번")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
         Thread.sleep(1000);
 
         ChatRoom room = chatRoomService.findByRoomName("채팅방1번");
@@ -115,12 +114,11 @@ public class ChatTest {
     void createChatRoom() throws InterruptedException {
         String[] nicknames = new String[]{"test2","test3","test4"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방1번")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
         Thread.sleep(1000);
 
         ChatRoom room = chatRoomService.findByRoomName("채팅방1번");
@@ -137,14 +135,13 @@ public class ChatTest {
     void createDuplicateOpenChatRoom(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방1번")
                 .nicknames(nicknames)
                 .type("open")
                 .build();
 
-        chatRoomService.createChatRoom(chatRegister);
-        assertThatThrownBy(() -> chatRoomService.createChatRoom(chatRegister))
+        chatRoomService.createChatRoom(chatRegister, "test1");
+        assertThatThrownBy(() -> chatRoomService.createChatRoom(chatRegister, "test1"))
                 .isInstanceOf(DuplicateChatRoomNameException.class)
                 .hasMessage("이미 존재하는 오픈채팅방입니다.");
     }
@@ -154,14 +151,13 @@ public class ChatTest {
     void createDuplicateGeneralChatRoom(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방1번")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
 
-        chatRoomService.createChatRoom(chatRegister);
-        ChatRoom room = chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
+        ChatRoom room = chatRoomService.createChatRoom(chatRegister, "test1");
 
         assertThat(room.getRoomName()).isEqualTo("채팅방1번");
     }
@@ -171,19 +167,18 @@ public class ChatTest {
     void modifyChatRoomName(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방1번")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("채팅방1번");
         ChatRoomRequest.modify modify = ChatRoomRequest.modify.builder()
                         .chatRoomId(room.getChatRoomId())
                                 .newRoomName("커스텀채팅방1번")
                                         .build();
-        chatRoomService.modifyChatRoom(modify);
+        chatRoomService.modifyChatRoom(modify, "test1");
         ChatRoom room1 = chatRoomService.findByRoomName("커스텀채팅방1번");
         assertThat(room1).isNotNull();
         assertThat(room1.isCustomRoomName()).isTrue();
@@ -195,19 +190,17 @@ public class ChatTest {
     void modifyDuplicateOpenChatRoomNameFail(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방1번")
                 .nicknames(nicknames)
                 .type("open")
                 .build();
         ChatRoomRequest.register chatRegister2 = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방2번")
                 .nicknames(nicknames)
                 .type("open")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
-        chatRoomService.createChatRoom(chatRegister2);
+        chatRoomService.createChatRoom(chatRegister, "test1");
+        chatRoomService.createChatRoom(chatRegister2, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("채팅방1번");
         ChatRoomRequest.modify modify = ChatRoomRequest.modify.builder()
@@ -215,7 +208,7 @@ public class ChatTest {
                 .newRoomName("채팅방2번")
                 .build();
 
-        assertThatThrownBy(() -> chatRoomService.modifyChatRoom(modify))
+        assertThatThrownBy(() -> chatRoomService.modifyChatRoom(modify, "test1"))
                 .isInstanceOf(DuplicateChatRoomNameException.class)
                 .hasMessageContaining("이미 존재하는 오픈채팅방입니다.");
     }
@@ -225,11 +218,10 @@ public class ChatTest {
     void modifyChatRoomNameByModifyNickname(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         UserRequest.modify modify = UserRequest.modify.builder()
                 .password("12345")
@@ -248,11 +240,10 @@ public class ChatTest {
     void modifySenderNameByModifyNickname() throws InterruptedException {
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("test1, test2");
 
@@ -275,7 +266,9 @@ public class ChatTest {
         userService.modify(modify, "test1");
 
         Message message1 = messageService.recentMessage(room.getChatRoomId());
+        List<Message> messages = messageService.chatRoomMessages(room.getChatRoomId(), "test1");
         assertThat(message1.getSenderName()).isEqualTo("test10");
+        assertThat(messages.size()).isEqualTo(2);
     }
 
     @Test
@@ -283,12 +276,11 @@ public class ChatTest {
     void inviteCustomChatRoom(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방1번")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("채팅방1번");
 
@@ -297,7 +289,7 @@ public class ChatTest {
                 .chatRoomId(room.getChatRoomId())
                 .nicknames(nicknames2)
                 .build();
-        chatRoomService.inviteChatRoom(invite);
+        chatRoomService.inviteChatRoom(invite, "test1");
 
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test3");
 
@@ -311,21 +303,19 @@ public class ChatTest {
     void inviteGeneralChatRoom() throws InterruptedException {
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("test1, test2");
 
         String[] nicknames2 = new String[]{"test3"};
         ChatRoomRequest.invite invite = ChatRoomRequest.invite.builder()
-                .invitorName("test1")
                 .chatRoomId(room.getChatRoomId())
                 .nicknames(nicknames2)
                 .build();
-        chatRoomService.inviteChatRoom(invite);
+        chatRoomService.inviteChatRoom(invite, "test1");
         Thread.sleep(1000);
 
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test3");
@@ -342,21 +332,19 @@ public class ChatTest {
     void inviteGeneralChatRoomMany() throws InterruptedException {
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("test1, test2");
 
         String[] nicknames2 = new String[]{"test3", "test4"};
         ChatRoomRequest.invite invite = ChatRoomRequest.invite.builder()
-                .invitorName("test1")
                 .chatRoomId(room.getChatRoomId())
                 .nicknames(nicknames2)
                 .build();
-        chatRoomService.inviteChatRoom(invite);
+        chatRoomService.inviteChatRoom(invite, "test1");
         Thread.sleep(1000);
 
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList("test3");
@@ -374,12 +362,11 @@ public class ChatTest {
     void joinCustomChatRoom(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("오픈채팅방")
                 .nicknames(nicknames)
                 .type("open")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("오픈채팅방");
 
@@ -401,20 +388,18 @@ public class ChatTest {
     void leaveChatRoom(){
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("test1, test2");
 
         ChatRoomRequest.leave leave = ChatRoomRequest.leave.builder()
                 .chatRoomId(room.getChatRoomId())
-                .loginId("test2")
                 .build();
 
-        chatRoomService.leaveChatRoom(leave);
+        chatRoomService.leaveChatRoom(leave, "test2");
 
         List<ChatRoomResponse> roomResponsesTest1 = chatRoomService.userChatRoomList("test1");
         List<ChatRoomResponse> roomResponsesTest2 = chatRoomService.userChatRoomList("test2");
@@ -429,11 +414,10 @@ public class ChatTest {
     void selectChatRoomMessages() throws InterruptedException {
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("test1, test2");
 
@@ -459,11 +443,10 @@ public class ChatTest {
     void selectChatRoomAfterJoin() throws InterruptedException {
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("test1, test2");
 
@@ -504,12 +487,11 @@ public class ChatTest {
     void selectChatRoomRecentMessage() throws InterruptedException{
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("최근메세지조회 채팅방")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
 
         ChatRoom room = chatRoomService.findByRoomName("최근메세지조회 채팅방");
 
@@ -534,12 +516,11 @@ public class ChatTest {
     void realTimeChangeNotificationCount() throws InterruptedException {
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방 알림 수 변경 채팅방")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
         User test2 = userService.findByNickname("test2");
 
         ChatRoom room = chatRoomService.findByRoomName("채팅방 알림 수 변경 채팅방");
@@ -553,7 +534,7 @@ public class ChatTest {
 
             messageService.sendMessage(message);
             Thread.sleep(1000);
-            UserChatRoom userChatRoomByChatRoomAndUser = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2);
+            UserChatRoom userChatRoomByChatRoomAndUser = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2).get();
             assertThat(userChatRoomByChatRoomAndUser.getNotificationCount()).isEqualTo(i+1);
         }
     }
@@ -563,12 +544,11 @@ public class ChatTest {
     void realTimeResetNotificationCount() throws InterruptedException {
         String[] nicknames = new String[]{"test2"};
         ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-                .loginId("test1")
                 .roomName("채팅방 알림 수 리셋 채팅방")
                 .nicknames(nicknames)
                 .type("general")
                 .build();
-        chatRoomService.createChatRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister, "test1");
         User test2 = userService.findByNickname("test2");
 
         ChatRoom room = chatRoomService.findByRoomName("채팅방 알림 수 리셋 채팅방");
@@ -583,7 +563,7 @@ public class ChatTest {
             messageService.sendMessage(message);
             Thread.sleep(1000);
         }
-        UserChatRoom userChatRoomByChatRoomAndUser = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2);
+        UserChatRoom userChatRoomByChatRoomAndUser = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2).get();
         assertThat(userChatRoomByChatRoomAndUser.getNotificationCount()).isEqualTo(5);
 
         ChatRoomRequest.notification notification = ChatRoomRequest.notification.builder()
@@ -591,7 +571,7 @@ public class ChatTest {
                 .nickname("test2")
                 .build();
         messageService.resetNotification(notification);
-        UserChatRoom userChatRoomByChatRoomAndUser2 = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2);
+        UserChatRoom userChatRoomByChatRoomAndUser2 = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(room, test2).get();
         assertThat(userChatRoomByChatRoomAndUser2.getNotificationCount()).isEqualTo(0);
     }
 }
