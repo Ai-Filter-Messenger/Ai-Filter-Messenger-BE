@@ -176,7 +176,7 @@ public class AuthTest {
                 .type("open")
                 .build();
 
-        chatRoomService.createRoom(chatRegister);
+        chatRoomService.createChatRoom(chatRegister);
 
         userService.withdrawal("테스트1");
         ChatRoom room = chatRoomService.findByRoomName("test2");
