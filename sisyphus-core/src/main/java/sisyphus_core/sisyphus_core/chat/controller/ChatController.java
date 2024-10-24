@@ -26,42 +26,42 @@ public class ChatController {
 
     //채팅방 생성
     @PostMapping("/create")
-    public ResponseEntity<ChatRoom> createChatRoom(@RequestBody @Valid ChatRoomRequest.register register){
-        ChatRoom room = chatRoomService.createChatRoom(register);
+    public ResponseEntity<ChatRoom> createChatRoom(@RequestBody @Valid ChatRoomRequest.register register,Authentication auth){
+        ChatRoom room = chatRoomService.createChatRoom(register, auth.getName());
         return ResponseEntity.ok().body(room);
     }
 
     @PutMapping("/modify")
-    public ResponseEntity<String> modifyChatRoom(@RequestBody @Valid ChatRoomRequest.modify modify){
-        chatRoomService.modifyChatRoom(modify);
+    public ResponseEntity<String> modifyChatRoom(@RequestBody @Valid ChatRoomRequest.modify modify,Authentication auth){
+        chatRoomService.modifyChatRoom(modify, auth.getName());
         return ResponseEntity.ok("방 정보가 변경되었습니다.");
     }
 
     //채팅방 초대
     @PostMapping("/invite")
-    public ResponseEntity<String> inviteChatRoom(@RequestBody @Valid ChatRoomRequest.invite invite){
-        chatRoomService.inviteChatRoom(invite);
+    public ResponseEntity<String> inviteChatRoom(@RequestBody @Valid ChatRoomRequest.invite invite,Authentication auth){
+        chatRoomService.inviteChatRoom(invite, auth.getName());
         return ResponseEntity.ok("방에 초대하였습니다.");
     }
 
     //채팅방 참여
     @PutMapping("/join")
-    public ResponseEntity<String> joinChatRoom(Authentication auth, @RequestBody @Valid ChatRoomRequest.join join){
+    public ResponseEntity<String> joinChatRoom(@RequestBody @Valid ChatRoomRequest.join join,Authentication auth){
         chatRoomService.joinChatRoom(auth.getName(), join.getChatRoomId());
         return ResponseEntity.ok("방에 입장하였습니다.");
     }
 
     //채팅방 나가기
     @PutMapping("/leave")
-    public ResponseEntity<String> leaveChatRoom(@RequestBody @Valid ChatRoomRequest.leave leave){
-        chatRoomService.leaveChatRoom(leave);
+    public ResponseEntity<String> leaveChatRoom(@RequestBody @Valid ChatRoomRequest.leave leave,Authentication auth){
+        chatRoomService.leaveChatRoom(leave, auth.getName());
         return ResponseEntity.ok("방에서 퇴장하셨습니다.");
     }
 
     //채팅방 조회
     @GetMapping("/find/list")
-    public ResponseEntity<List<ChatRoomResponse>> getUserChatRoomList(@RequestParam String loginId){
-        List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList(loginId);
+    public ResponseEntity<List<ChatRoomResponse>> getUserChatRoomList(Authentication auth){
+        List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList(auth.getName());
         return ResponseEntity.ok().body(roomResponses);
     }
 

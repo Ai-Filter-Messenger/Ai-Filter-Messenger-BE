@@ -38,6 +38,7 @@ public class MessageService {
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
 
+    //메세지 보내기
     @Transactional
     public void sendMessage(Message message){
         ChatRoom chatRoom = chatRoomRepository.findById(message.getRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
@@ -50,47 +51,42 @@ public class MessageService {
         template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
     }
 
+    //채팅방 나가기
     public void leave(Message message) {
         kafkaProducerService.sendMessage(message);
         template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
     }
 
+    //채팅방 참여
     public void join(Message message){
         kafkaProducerService.sendMessage(message);
         template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
     }
 
+    //회원 닉네임 수정
     public void modifySenderName(String senderName, String newNickname, Long chatRoomId){
         String key = "room:" + chatRoomId;
         List<Message> allMessages = findMessagesAboutChatRoom(key);
 
-        for (Message allMessage : allMessages) {
-            if(allMessage.getSenderName().equals(senderName)){
-                allMessage.setSenderName(newNickname);
-            }
-        }
+        for (int i = 0; i < allMessages.size(); i++) {
+            Message message = allMessages.get(i);
 
-        redisTemplate.delete(key);
-        for (Message message : allMessages) {
-            redisTemplate.opsForList().rightPush(key, message);
+            // senderName이 일치하면 업데이트
+            if (message.getSenderName().equals(senderName)) {
+                message.setSenderName(newNickname);
+                // Redis 리스트 내 특정 인덱스 값 갱신 (생성 시간 유지)
+                redisTemplate.opsForList().set(key, i, message);
+            }
         }
     }
 
+    //채팅방 메세지 조회
     public List<Message> chatRoomMessages(Long chatRoomId, String loginId){
         String key = "room:" + chatRoomId;
         List<Message> allMessages = findMessagesAboutChatRoom(key);
 
         String joinKey = "userJoin:" + chatRoomId + ":" + loginId;
-        Object userJoinEpochObj = redisTemplate.opsForValue().get(joinKey);
-
-        Long userJoinEpoch = null;
-
-        // Integer인지 Long인지 확인하여 변환
-        if (userJoinEpochObj instanceof Integer) {
-            userJoinEpoch = ((Integer) userJoinEpochObj).longValue();  // Integer 값을 Long으로 변환
-        } else if (userJoinEpochObj instanceof Long) {
-            userJoinEpoch = (Long) userJoinEpochObj;  // 이미 Long 타입일 경우
-        }
+        Long userJoinEpoch = getUserJoinEpoch(joinKey);
 
         // 유저 참여 이후의 메시지만 필터링
         if (userJoinEpoch != null) {
@@ -104,6 +100,22 @@ public class MessageService {
         }
     }
 
+    public Long getUserJoinEpoch(String joinKey){
+        Object userJoinEpochObj = redisTemplate.opsForValue().get(joinKey);
+
+        Long userJoinEpoch = null;
+
+        // Integer인지 Long인지 확인하여 변환
+        if (userJoinEpochObj instanceof Integer) {
+            userJoinEpoch = ((Integer) userJoinEpochObj).longValue();  // Integer 값을 Long으로 변환
+        } else if (userJoinEpochObj instanceof Long) {
+            userJoinEpoch = (Long) userJoinEpochObj;  // 이미 Long 타입일 경우
+        }
+
+        return userJoinEpoch;
+    }
+
+    //가장 최근 메세지 조회
     public Message recentMessage(Long chatRoomId) {
         String key = "room:" + chatRoomId;
         Object result = redisTemplate.opsForList().index(key, 0);
@@ -128,7 +140,8 @@ public class MessageService {
     public void resetNotification(ChatRoomRequest.notification notification){
         ChatRoom chatRoom = chatRoomRepository.findById(notification.getRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다"));
         User user = userRepository.findByNickname(notification.getNickname()).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
-        UserChatRoom userChatRoomByChatRoomAndUser = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(chatRoom, user);
+        UserChatRoom userChatRoomByChatRoomAndUser = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(chatRoom, user).orElseThrow(() -> new ChatRoomNotFoundException("유저가 속해있는 채팅방이 아닙니다."));
+
         userChatRoomByChatRoomAndUser.resetCount();
     }
 }

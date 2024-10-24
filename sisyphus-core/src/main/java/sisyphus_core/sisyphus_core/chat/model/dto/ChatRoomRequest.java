@@ -14,7 +14,6 @@ public class ChatRoomRequest {
     public static class register{
         private String roomName;
         private String[] nicknames;
-        private String loginId;
         private String type;
     }
 
@@ -34,7 +33,6 @@ public class ChatRoomRequest {
     public static class invite{
         private Long chatRoomId;
         private String[] nicknames;
-        private String invitorName;
     }
 
     @Getter
@@ -50,7 +48,6 @@ public class ChatRoomRequest {
     @NoArgsConstructor
     @Builder
     public static class leave{
-        private String loginId;
         private Long chatRoomId;
     }
 

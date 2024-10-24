@@ -39,8 +39,7 @@ public class ChatRoomService {
 
     //채팅 방 생성
     @Transactional
-    public ChatRoom createChatRoom(ChatRoomRequest.register register){
-        String loginId = register.getLoginId();
+    public ChatRoom createChatRoom(ChatRoomRequest.register register,String loginId){
         String roomName = register.getRoomName();
         String[] nicknames = register.getNicknames();
         String type = register.getType();
@@ -79,7 +78,7 @@ public class ChatRoomService {
 
         chatRoomRepository.save(chatRoom);
 
-        saveUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
+        saveUserJoinTime(chatRoom.getChatRoomId(), user.getLoginId());
         for (String nickname : nicknames) {
             User inviteUser = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
             UserChatRoom userChatRoom = UserChatRoom.builder()
@@ -89,7 +88,7 @@ public class ChatRoomService {
                     .NotificationCount(0)
                     .build();
             userChatRoomRepository.save(userChatRoom);
-            saveUserJoinTime(chatRoom.getChatRoomId(), nickname);
+            saveUserJoinTime(chatRoom.getChatRoomId(), inviteUser.getLoginId());
         }
 
         UserChatRoom userChatRoom = UserChatRoom.builder()
@@ -121,8 +120,12 @@ public class ChatRoomService {
 
     //방 정보 변경
     @Transactional
-    public void modifyChatRoom(ChatRoomRequest.modify modify){
+    public void modifyChatRoom(ChatRoomRequest.modify modify, String loginId){
         ChatRoom chatRoom = chatRoomRepository.findById(modify.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+        User user1 = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        if(userChatRoomRepository.findUserChatRoomByChatRoomAndUser(chatRoom, user1).isEmpty()) {
+            throw new ChatRoomNotFoundException("방 정보 변경의 권한이 없습니다.");
+        }
         List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
         if(chatRoom.getType() == ChatRoomType.OPEN){
             if(chatRoomRepository.findByRoomName(modify.getNewRoomName()).isPresent()){
@@ -154,7 +157,7 @@ public class ChatRoomService {
     public void joinChatRoom(String loginId, Long chatRoomId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
-        saveUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
+        saveUserJoinTime(chatRoom.getChatRoomId(), loginId);
         chatRoom.joinUser();
 
         UserChatRoom userChatRoom = UserChatRoom.builder()
@@ -171,9 +174,10 @@ public class ChatRoomService {
 
     //채팅방 초대 (일반채팅)
     @Transactional
-    public void inviteChatRoom(ChatRoomRequest.invite invite){
+    public void inviteChatRoom(ChatRoomRequest.invite invite,String loginId){
         ChatRoom chatRoom = chatRoomRepository.findById(invite.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
-        String inviteMessage = invite.getInvitorName() + "님이 ";
+        User user1 = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        String inviteMessage = user1.getNickname() + "님이 ";
         String[] nicknames = invite.getNicknames();
         for (int i = 0; i < nicknames.length; i++) {
             String nickname = nicknames[i];
@@ -181,7 +185,7 @@ public class ChatRoomService {
             User user = userRepository.findByNickname(nickname)
                     .orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
 
-            saveUserJoinTime(chatRoom.getChatRoomId(), nickname);
+            saveUserJoinTime(chatRoom.getChatRoomId(), user.getLoginId());
             chatRoom.joinUser();
 
             if (!chatRoom.isCustomRoomName()) {
@@ -209,16 +213,16 @@ public class ChatRoomService {
     }
 
     //채팅방 초대, 참여 시 유저 참여 시간 저장
-    public void saveUserJoinTime(Long chatRoomId, String nickname) {
-        String joinKey = "userJoin:" + chatRoomId + ":" + nickname;
+    public void saveUserJoinTime(Long chatRoomId, String loginId) {
+        String joinKey = "userJoin:" + chatRoomId + ":" + loginId;
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
         redisTemplate.opsForValue().set(joinKey, now.toEpochSecond());
     }
 
     //채팅방 나가기
     @Transactional
-    public void leaveChatRoom(ChatRoomRequest.leave leave){
-        User user = userRepository.findByLoginId(leave.getLoginId()).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+    public void leaveChatRoom(ChatRoomRequest.leave leave,String loginId){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         ChatRoom chatRoom = chatRoomRepository.findById(leave.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
 
         chatRoom.leaveUser();
@@ -244,15 +248,15 @@ public class ChatRoomService {
         Message message = Message.builder().roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).message(user.getNickname() + "님이 퇴장하셨습니다.").
                 type(MessageType.LEAVE).build();
         messageService.leave(message);
-        deleteUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
+        deleteUserJoinTime(chatRoom.getChatRoomId(), user.getLoginId());
 
         if(chatRoom.getUserCount() == 0) chatRoomRepository.deleteById(leave.getChatRoomId());
         else chatRoomRepository.save(chatRoom);
     }
 
     //채팅방을 나갈때 유저 참여 시간 제거
-    public void deleteUserJoinTime(Long chatRoomId, String nickname) {
-        String joinKey = "userJoin:" + chatRoomId + ":" + nickname;
+    public void deleteUserJoinTime(Long chatRoomId, String loginId) {
+        String joinKey = "userJoin:" + chatRoomId + ":" + loginId;
         redisTemplate.delete(joinKey);
     }
 
