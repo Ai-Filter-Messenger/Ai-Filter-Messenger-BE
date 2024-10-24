@@ -6,11 +6,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
-import sisyphus_core.sisyphus_core.chat.model.Message;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
-import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
-import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 @SpringBootApplication
 @RequiredArgsConstructor
@@ -18,7 +15,6 @@ public class SisyphusCoreApplication {
 
 	private final UserService userService;
 	private final ChatRoomService chatRoomService;
-	private final MessageService messageService;
 
 	public static void main(String[] args) {
 		SpringApplication.run(SisyphusCoreApplication.class, args);
@@ -60,7 +56,6 @@ public class SisyphusCoreApplication {
 
 		String[] nicknames = new String[]{"test2"};
 		ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-						.loginId("test1")
 						.roomName("채팅방1번")
 						.nicknames(nicknames)
 						.type("general")
@@ -68,7 +63,6 @@ public class SisyphusCoreApplication {
 
 		String[] nicknames2 = new String[]{"test2", "test3"};
 		ChatRoomRequest.register chatRegister2 = ChatRoomRequest.register.builder()
-				.loginId("test1")
 				.roomName("채팅방2번")
 				.nicknames(nicknames2)
 				.type("open")
@@ -78,8 +72,8 @@ public class SisyphusCoreApplication {
 		userService.register(register2);
 		userService.register(register3);
 		userService.register(register4);
-		chatRoomService.createRoom(chatRegister);
-		chatRoomService.createRoom(chatRegister2);
+		chatRoomService.createChatRoom(chatRegister, "test1");
+		chatRoomService.createChatRoom(chatRegister2, "test1");
 	}
 
 }

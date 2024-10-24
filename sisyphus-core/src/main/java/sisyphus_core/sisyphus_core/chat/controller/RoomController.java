@@ -1,6 +1,7 @@
 package sisyphus_core.sisyphus_core.chat.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,7 +13,6 @@ import sisyphus_core.sisyphus_core.chat.exception.ChatRoomNotFoundException;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.Message;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomResponse;
-import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.repository.ChatRoomRepository;
 import sisyphus_core.sisyphus_core.chat.service.ChatRoomService;
 import sisyphus_core.sisyphus_core.chat.service.MessageService;
@@ -22,6 +22,7 @@ import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class RoomController {
 
     private final ChatRoomRepository chatRoomRepository;
@@ -29,14 +30,14 @@ public class RoomController {
     private final ChatRoomService chatRoomService;
     private final MessageService messageService;
 
-    @GetMapping("/chat/{chatRoomId}/{loginId}")
+    @GetMapping("/chat/{chatRoomId}/{nickname}")
     public String chatP(@PathVariable("chatRoomId") Long chatRoomId,
-                        @PathVariable("loginId") String loginId,
+                        @PathVariable("nickname") String nickname,
                         Model model){
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
-        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        User user = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         List<ChatRoomResponse> roomResponses = chatRoomService.userChatRoomList(user.getLoginId());
-        List<Message> messages = messageService.chatRoomMessages(chatRoomId,user.getNickname());
+        List<Message> messages = messageService.chatRoomMessages(chatRoomId,user.getLoginId());
         Collections.reverse(messages);
 
         model.addAttribute("room", chatRoom);
