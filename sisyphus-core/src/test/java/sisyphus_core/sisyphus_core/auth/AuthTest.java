@@ -275,4 +275,26 @@ public class AuthTest {
         assertThat(test2FollowerUser2.size()).isEqualTo(0);
         assertThat(test3FollowerUser2.size()).isEqualTo(1);
     }
+
+    @Test
+    @DisplayName("유저 팔로워/팔로잉 목록 조회")
+    void followListUser(){
+        userService.follow("테스트1", "test2");
+        userService.follow("테스트1", "test3");
+        userService.follow("테스트2", "test3");
+
+        List<UserResponse> test1Followers = userService.findFollowerList("테스트1");
+        List<UserResponse> test1Followings = userService.findFollowingList("테스트1");
+        List<UserResponse> test2Followers = userService.findFollowerList("테스트2");
+        List<UserResponse> test2Followings = userService.findFollowingList("테스트2");
+        List<UserResponse> test3Followers = userService.findFollowerList("테스트3");
+        List<UserResponse> test3Followings = userService.findFollowingList("테스트3");
+
+        assertThat(test1Followers.size()).isEqualTo(0);
+        assertThat(test1Followings.size()).isEqualTo(2);
+        assertThat(test2Followers.size()).isEqualTo(1);
+        assertThat(test2Followings.size()).isEqualTo(1);
+        assertThat(test3Followers.size()).isEqualTo(2);
+        assertThat(test3Followings.size()).isEqualTo(0);
+    }
 }
