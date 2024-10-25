@@ -1,10 +1,7 @@
 package sisyphus_core.sisyphus_core.chat.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import sisyphus_core.sisyphus_core.auth.model.User;
 
 @Entity
@@ -27,7 +24,8 @@ public class UserChatRoom {
     @JoinColumn(name = "chatRoom_id", nullable = false)
     private ChatRoom chatRoom;
 
-    private boolean isCheck;
+    @Setter
+    private boolean isFix;
 
     private int NotificationCount;
 

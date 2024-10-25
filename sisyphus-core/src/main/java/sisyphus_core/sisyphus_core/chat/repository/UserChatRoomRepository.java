@@ -7,6 +7,7 @@ import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserChatRoomRepository extends JpaRepository<UserChatRoom, Long> {
@@ -15,7 +16,9 @@ public interface UserChatRoomRepository extends JpaRepository<UserChatRoom, Long
 
     List<UserChatRoom> findUserChatRoomsByChatRoom(ChatRoom chatRoom);
 
-    UserChatRoom findUserChatRoomByChatRoomAndUser(ChatRoom chatRoom, User user);
+    Optional<UserChatRoom> findUserChatRoomByChatRoomAndUser(ChatRoom chatRoom, User user);
 
     void deleteByChatRoom(ChatRoom chatRoom);
+
+    void deleteAllByUser(User user);
 }

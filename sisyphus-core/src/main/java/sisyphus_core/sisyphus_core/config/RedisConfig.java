@@ -10,6 +10,7 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import sisyphus_core.sisyphus_core.auth.model.Mail;
 import sisyphus_core.sisyphus_core.chat.model.Message;
 
 @Configuration
@@ -27,8 +28,8 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisTemplate<String, Message> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<String, Message> template = new RedisTemplate<>();
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -37,6 +38,7 @@ public class RedisConfig {
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(objectMapper);
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(serializer);
+        template.setHashValueSerializer(serializer);
 
         return template;
     }

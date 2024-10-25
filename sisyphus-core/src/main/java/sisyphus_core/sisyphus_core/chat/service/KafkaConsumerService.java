@@ -12,7 +12,7 @@ import sisyphus_core.sisyphus_core.chat.model.Message;
 @RequiredArgsConstructor
 public class KafkaConsumerService {
 
-    private final RedisTemplate<String, Message> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @KafkaListener(topics = "ai-chat", groupId = "myGroup")
     public void consume(Message message) throws Exception{

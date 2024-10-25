@@ -34,13 +34,14 @@ public class ChatRoomService {
     private final UserChatRoomRepository userChatRoomRepository;
     private final UserRepository userRepository;
     private final MessageService messageService;
-    private final RedisTemplate redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final SimpMessagingTemplate template;
+    private final String CHAT_ROOM_FIX = "채팅방을 고정하였습니다.";
+    private final String CHAT_ROOM_UNFIX = "채팅방 고정을 해제하였습니다.";
 
     //채팅 방 생성
     @Transactional
-    public ChatRoom createRoom(ChatRoomRequest.register register){
-        String loginId = register.getLoginId();
+    public ChatRoom createChatRoom(ChatRoomRequest.register register,String loginId){
         String roomName = register.getRoomName();
         String[] nicknames = register.getNicknames();
         String type = register.getType();
@@ -79,23 +80,23 @@ public class ChatRoomService {
 
         chatRoomRepository.save(chatRoom);
 
-        saveUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
+        saveUserJoinTime(chatRoom.getChatRoomId(), user.getLoginId());
         for (String nickname : nicknames) {
             User inviteUser = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
             UserChatRoom userChatRoom = UserChatRoom.builder()
                     .chatRoom(chatRoom)
                     .user(inviteUser)
-                    .isCheck(false)
+                    .isFix(false)
                     .NotificationCount(0)
                     .build();
             userChatRoomRepository.save(userChatRoom);
-            saveUserJoinTime(chatRoom.getChatRoomId(), nickname);
+            saveUserJoinTime(chatRoom.getChatRoomId(), inviteUser.getLoginId());
         }
 
         UserChatRoom userChatRoom = UserChatRoom.builder()
                 .chatRoom(chatRoom)
                 .user(user)
-                .isCheck(false)
+                .isFix(false)
                 .NotificationCount(0)
                 .build();
 
@@ -119,6 +120,31 @@ public class ChatRoomService {
         return chatRoom;
     }
 
+    //방 정보 변경
+    @Transactional
+    public void modifyChatRoom(ChatRoomRequest.modify modify, String loginId){
+        ChatRoom chatRoom = chatRoomRepository.findById(modify.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+        User user1 = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        if(userChatRoomRepository.findUserChatRoomByChatRoomAndUser(chatRoom, user1).isEmpty()) {
+            throw new ChatRoomNotFoundException("방 정보 변경의 권한이 없습니다.");
+        }
+        List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
+        if(chatRoom.getType() == ChatRoomType.OPEN){
+            if(chatRoomRepository.findByRoomName(modify.getNewRoomName()).isPresent()){
+                throw new DuplicateChatRoomNameException("이미 존재하는 오픈채팅방입니다.");
+            }
+        }
+
+        chatRoom.setRoomName(modify.getNewRoomName());
+        if(!chatRoom.isCustomRoomName()) chatRoom.setCustomRoomName(true);
+        chatRoomRepository.save(chatRoom);
+
+        for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
+            User user = userChatRoom.getUser();
+            template.convertAndSend("/queue/chatroom/list/" + user.getNickname(), toResponseChatRoom(chatRoom));
+        }
+    }
+
     //유저 채팅방 조회
     @Transactional
     public List<ChatRoomResponse> userChatRoomList(String loginId){
@@ -133,13 +159,13 @@ public class ChatRoomService {
     public void joinChatRoom(String loginId, Long chatRoomId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
-        saveUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
+        saveUserJoinTime(chatRoom.getChatRoomId(), loginId);
         chatRoom.joinUser();
 
         UserChatRoom userChatRoom = UserChatRoom.builder()
                 .chatRoom(chatRoom)
                 .user(user)
-                .isCheck(false)
+                .isFix(false)
                 .NotificationCount(0)
                 .build();
 
@@ -150,9 +176,10 @@ public class ChatRoomService {
 
     //채팅방 초대 (일반채팅)
     @Transactional
-    public void inviteChatRoom(ChatRoomRequest.invite invite){
+    public void inviteChatRoom(ChatRoomRequest.invite invite,String loginId){
         ChatRoom chatRoom = chatRoomRepository.findById(invite.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
-        String inviteMessage = invite.getInvitorName() + "님이 ";
+        User user1 = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        String inviteMessage = user1.getNickname() + "님이 ";
         String[] nicknames = invite.getNicknames();
         for (int i = 0; i < nicknames.length; i++) {
             String nickname = nicknames[i];
@@ -160,7 +187,7 @@ public class ChatRoomService {
             User user = userRepository.findByNickname(nickname)
                     .orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
 
-            saveUserJoinTime(chatRoom.getChatRoomId(), nickname);
+            saveUserJoinTime(chatRoom.getChatRoomId(), user.getLoginId());
             chatRoom.joinUser();
 
             if (!chatRoom.isCustomRoomName()) {
@@ -170,7 +197,7 @@ public class ChatRoomService {
             UserChatRoom userChatRoom = UserChatRoom.builder()
                     .chatRoom(chatRoom)
                     .user(user)
-                    .isCheck(false)
+                    .isFix(false)
                     .NotificationCount(0)
                     .build();
 
@@ -188,16 +215,16 @@ public class ChatRoomService {
     }
 
     //채팅방 초대, 참여 시 유저 참여 시간 저장
-    public void saveUserJoinTime(Long chatRoomId, String nickname) {
-        String joinKey = "userJoin:" + chatRoomId + ":" + nickname;
+    public void saveUserJoinTime(Long chatRoomId, String loginId) {
+        String joinKey = "userJoin:" + chatRoomId + ":" + loginId;
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
         redisTemplate.opsForValue().set(joinKey, now.toEpochSecond());
     }
 
     //채팅방 나가기
     @Transactional
-    public void leaveChatRoom(ChatRoomRequest.leave leave){
-        User user = userRepository.findByLoginId(leave.getLoginId()).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+    public void leaveChatRoom(ChatRoomRequest.leave leave,String loginId){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         ChatRoom chatRoom = chatRoomRepository.findById(leave.getChatRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
 
         chatRoom.leaveUser();
@@ -223,21 +250,58 @@ public class ChatRoomService {
         Message message = Message.builder().roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).message(user.getNickname() + "님이 퇴장하셨습니다.").
                 type(MessageType.LEAVE).build();
         messageService.leave(message);
-        deleteUserJoinTime(chatRoom.getChatRoomId(), user.getNickname());
+        deleteUserJoinTime(chatRoom.getChatRoomId(), user.getLoginId());
 
         if(chatRoom.getUserCount() == 0) chatRoomRepository.deleteById(leave.getChatRoomId());
         else chatRoomRepository.save(chatRoom);
     }
 
     //채팅방을 나갈때 유저 참여 시간 제거
-    public void deleteUserJoinTime(Long chatRoomId, String nickname) {
-        String joinKey = "userJoin:" + chatRoomId + ":" + nickname;
+    public void deleteUserJoinTime(Long chatRoomId, String loginId) {
+        String joinKey = "userJoin:" + chatRoomId + ":" + loginId;
         redisTemplate.delete(joinKey);
     }
 
-    //ResponseChatRoom으로 변환
+    //회원탈퇴 시 채팅방 정보 변경
     @Transactional
-    public List<ChatRoomResponse> toResponseChatRoom(List<UserChatRoom> userChatRoomsByUser) {
+    public void withdrawalUser(List<UserChatRoom> userChatRoomList, String nickname){
+        for (UserChatRoom userChatRoom : userChatRoomList) {
+            ChatRoom chatRoom = userChatRoom.getChatRoom();
+            chatRoom.leaveUser();
+            if(!chatRoom.isCustomRoomName()) {
+                String renewalChatRoomName = chatRoom.getRoomName().replace(nickname, "").trim();
+
+                renewalChatRoomName = renewalChatRoomName.replaceAll(",\\s*,", ", ")
+                        .replaceAll(",\\s*$", "")
+                        .replaceAll("^\\s*,", "")
+                        .trim();
+
+                chatRoom.setRoomName(renewalChatRoomName);
+            }
+
+            if(chatRoom.getUserCount() == 0) chatRoomRepository.deleteById(chatRoom.getChatRoomId());
+            else chatRoomRepository.save(chatRoom);
+        }
+    }
+
+    //채팅방 고정
+    @Transactional
+    public String toggleChatRoom(Long chatRoomId, String loginId){
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        UserChatRoom userChatRoom = userChatRoomRepository.findUserChatRoomByChatRoomAndUser(chatRoom, user).get();
+        if(!userChatRoom.isFix()){
+            userChatRoom.setFix(true);
+            return CHAT_ROOM_FIX;
+        }else{
+            userChatRoom.setFix(false);
+            return CHAT_ROOM_UNFIX;
+        }
+    }
+
+    //ResponseChatRoom으로 변환 -> 채팅방리스트 DTO
+    @Transactional
+    protected List<ChatRoomResponse> toResponseChatRoom(List<UserChatRoom> userChatRoomsByUser) {
         List<ChatRoomResponse> roomResponses = new ArrayList<>();
         for (UserChatRoom userChatRoom : userChatRoomsByUser) {
             List<String> profileImageUrls = new ArrayList<>();
@@ -261,8 +325,9 @@ public class ChatRoomService {
                     .profileImages(profileImageUrls)
                     .userCount(chatRoom.getUserCount())
                     .recentMessage(recentMessage)
+                    .createAt(chatRoom.getCreateAt())
                     .NotificationCount(userChatRoom.getNotificationCount())
-                    .isCheck(false)
+                    .isFix(userChatRoom.isFix())
                     .build();
 
             roomResponses.add(chatRoomResponse);
@@ -271,15 +336,18 @@ public class ChatRoomService {
         return roomResponses;
     }
 
+    //실시간 채팅방 생성시 필요한 DTO
     @Transactional
-    public ChatRoomResponse toResponseChatRoom(ChatRoom chatRoom) {
+    protected ChatRoomResponse toResponseChatRoom(ChatRoom chatRoom) {
         List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
         List<String> profileImageUrls = new ArrayList<>();
 
         Message message = messageService.recentMessage(chatRoom.getChatRoomId());
         String recentMessage = "";
+        ZonedDateTime createAt = null;
         if(message != null){
             recentMessage = message.getMessage();
+            createAt = message.getCreateAt();
         }
 
         for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
@@ -291,9 +359,10 @@ public class ChatRoomService {
                 .chatRoomId(chatRoom.getChatRoomId())
                 .type(chatRoom.getType())
                 .NotificationCount(0)
-                .isCheck(false)
+                .isFix(false)
                 .profileImages(profileImageUrls)
                 .recentMessage(recentMessage)
+                .createAt(createAt)
                 .userCount(chatRoom.getUserCount())
                 .build();
     }
