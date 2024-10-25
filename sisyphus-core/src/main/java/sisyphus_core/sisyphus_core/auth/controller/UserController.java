@@ -57,26 +57,26 @@ public class UserController {
     }
 
     //아이디찾기
-    @GetMapping("/find/loginId")
+    @PostMapping("/find/loginId")
     public ResponseEntity<UserResponse.find> findLoginId(@RequestBody @Valid UserRequest.find find){
         return ResponseEntity.ok().body(userService.findLoginId(find.getEmail()));
     }
 
     //비밀번호찾기
-    @GetMapping("/find/password")
+    @PostMapping("/find/password")
     public ResponseEntity<UserResponse.find> findPassword(@RequestBody @Valid UserRequest.find find){
         return ResponseEntity.ok().body(userService.findPassword(find.getLoginId()));
     }
 
     //로그인아이디 중복체크
-    @GetMapping("/check/loginId")
+    @PostMapping("/check/loginId")
     public ResponseEntity<String> checkLoginId(@RequestBody @Valid UserRequest.check check){
         userService.checkDuplicateLoginId(check.getLoginId());
         return ResponseEntity.ok("사용 가능한 아이디입니다.");
     }
 
     //닉네임 중복체크
-    @GetMapping("/check/nickname")
+    @PostMapping("/check/nickname")
     public ResponseEntity<String> checkNickname(@RequestBody @Valid UserRequest.check check){
         userService.checkDuplicateNickname(check.getNickname());
         return ResponseEntity.ok("사용 가능한 닉네임입니다.");
