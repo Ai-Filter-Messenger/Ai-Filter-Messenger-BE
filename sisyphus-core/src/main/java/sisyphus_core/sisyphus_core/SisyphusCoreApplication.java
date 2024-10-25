@@ -20,7 +20,7 @@ public class SisyphusCoreApplication {
 		SpringApplication.run(SisyphusCoreApplication.class, args);
 	}
 
-//	@PostConstruct
+	@PostConstruct
 	public void postData(){
 		UserRequest.register register1= UserRequest.register.builder()
 				.loginId("test1")
