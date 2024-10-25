@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,11 +15,11 @@ import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserException;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserLoginIdException;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserNicknameException;
 import sisyphus_core.sisyphus_core.auth.exception.UserPasswordNotMatchException;
-import sisyphus_core.sisyphus_core.auth.model.CustomUserDetails;
-import sisyphus_core.sisyphus_core.auth.model.Token;
-import sisyphus_core.sisyphus_core.auth.model.User;
+import sisyphus_core.sisyphus_core.auth.model.*;
 import sisyphus_core.sisyphus_core.auth.model.dto.*;
 import sisyphus_core.sisyphus_core.auth.model.jwt.JwtUtil;
+import sisyphus_core.sisyphus_core.auth.repository.UserFollowerRepository;
+import sisyphus_core.sisyphus_core.auth.repository.UserFollowingRepository;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
@@ -43,6 +44,9 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final ChatRoomRepository chatRoomRepository;
     private final MessageService messageService;
+    private final SimpMessagingTemplate template;
+    private final UserFollowingRepository userFollowingRepository;
+    private final UserFollowerRepository userFollowerRepository;
 
     @Value("${default.profile.image.url}")
     private String defProfileImage;
@@ -73,6 +77,7 @@ public class UserService {
     @Transactional
     public TokenResponse authenticate(UserRequest.login login, HttpServletResponse response){
         CustomUserDetails userDetails = (CustomUserDetails) customUserDetailService.loadUserByUsername(login.getLoginId());
+        User user = userRepository.findByLoginId(login.getLoginId()).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
 
         //로그인 비밀번호와 기존 비밀번호 검증
         if (!userDetails.getPassword().equals(login.getPassword())) {
@@ -83,7 +88,6 @@ public class UserService {
         Token existingToken = tokenService.findToken(login.getLoginId());
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.info("Authentication : {}", SecurityContextHolder.getContext().getAuthentication());
         response.addHeader("Authorization", "Bearer " + accessToken);
         if(existingToken == null){
             String refreshToken = jwtUtil.getRefreshToken(userDetails);
@@ -92,16 +96,18 @@ public class UserService {
         }else{
             tokenService.updateAccessToken(existingToken.getRefreshToken(), accessToken);
         }
-
+        user.setState(UserState.ACTIVE);
         return new TokenResponse(accessToken);
     }
 
     //로그아웃
     @Transactional
     public void unAuthenticate(String loginId, HttpServletResponse response){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         SecurityContextHolder.clearContext();
         tokenService.deleteToken(loginId);
         response.setHeader("Authorization", null);
+        user.setState(UserState.NONACTIVE);
     }
 
     //회원 정보 변경
@@ -131,6 +137,8 @@ public class UserService {
         tokenService.deleteToken(loginId);
         userChatRoomRepository.deleteAllByUser(user);
         chatRoomService.withdrawalUser(userChatRoomsByUser, user.getNickname());
+        userFollowingRepository.deleteByUser(user);
+        userFollowerRepository.deleteByFollowerUser(user);
         userRepository.deleteByLoginId(loginId);
     }
 
@@ -164,6 +172,29 @@ public class UserService {
         }
     }
 
+    //팔로우
+    @Transactional
+    public void follow(String loginId, String nickname){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가없습니다."));
+        User followUser = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+
+        UserFollowing userFollowing = UserFollowing.builder().user(user).followingUser(followUser).build();
+        UserFollower userFollower = UserFollower.builder().user(followUser).followerUser(user).build();
+        userFollowingRepository.save(userFollowing);
+        userFollowerRepository.save(userFollower);
+    }
+
+    //언팔로우
+    @Transactional
+    public void unfollow(String loginId, String nickname){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가없습니다."));
+        User followUser = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+
+        userFollowingRepository.deleteByUserAndFollowingUser(user, followUser);
+        userFollowerRepository.deleteByUserAndFollowerUser(followUser, user);
+    }
+
+    //모든 유저 조회
     @Transactional
     public List<UserResponse> findAllUser(){
         List<User> allUser = userRepository.findAll();
@@ -173,6 +204,8 @@ public class UserService {
     //테스트 코드용 데이터 전체 삭제
     @Transactional
     public void deleteAll(){
+        userFollowerRepository.deleteAll();
+        userFollowingRepository.deleteAll();
         userRepository.deleteAll();
     }
 
@@ -185,7 +218,6 @@ public class UserService {
         List<UserResponse> userResponseList = new ArrayList<>();
         for (User user : users) {
             UserResponse userResponse = UserResponse.builder()
-                    .loginId(user.getLoginId())
                     .email(user.getEmail())
                     .nickname(user.getNickname())
                     .name(user.getName())

@@ -79,4 +79,18 @@ public class UserController {
         userService.checkDuplicateNickname(check.getNickname());
         return ResponseEntity.ok("사용 가능한 닉네임입니다.");
     }
+
+    //유저 팔로우
+    @PutMapping("/follow")
+    public ResponseEntity<String> follow(@RequestParam String nickname,Authentication auth){
+        userService.follow(auth.getName(), nickname);
+        return ResponseEntity.ok("팔로우 하였습니다.");
+    }
+
+    //유저 언팔로우
+    @PutMapping("/unfollow")
+    public ResponseEntity<String> unfollow(@RequestParam String nickname, Authentication auth){
+        userService.unfollow(auth.getName(), nickname);
+        return ResponseEntity.ok("언팔로우 하였습니다.");
+    }
 }
