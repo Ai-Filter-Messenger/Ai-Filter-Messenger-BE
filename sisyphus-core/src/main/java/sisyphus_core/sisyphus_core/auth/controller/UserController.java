@@ -12,6 +12,8 @@ import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserResponse;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "유저 API", description = "컨트롤러에 대한 설명입니다.")
@@ -92,5 +94,15 @@ public class UserController {
     public ResponseEntity<String> unfollow(@RequestParam String nickname, Authentication auth){
         userService.unfollow(auth.getName(), nickname);
         return ResponseEntity.ok("언팔로우 하였습니다.");
+    }
+
+    @GetMapping("/follower/list")
+    public ResponseEntity<List<UserResponse>> findFollowerList(Authentication auth){
+        return ResponseEntity.ok().body(userService.findFollowerList(auth.getName()));
+    }
+
+    @GetMapping("/following/list")
+    public ResponseEntity<List<UserResponse>> findFollowingList(Authentication auth){
+        return ResponseEntity.ok().body(userService.findFollowingList(auth.getName()));
     }
 }

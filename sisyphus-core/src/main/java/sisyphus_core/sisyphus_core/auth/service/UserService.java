@@ -30,6 +30,7 @@ import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -192,6 +193,24 @@ public class UserService {
 
         userFollowingRepository.deleteByUserAndFollowingUser(user, followUser);
         userFollowerRepository.deleteByUserAndFollowerUser(followUser, user);
+    }
+
+    //팔로워유저 조회
+    @Transactional
+    public List<UserResponse> findFollowerList(String loginId){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        List<UserFollower> userFollowerList = userFollowerRepository.findByUser(user);
+        List<User> followerList = userFollowerList.stream().map(UserFollower::getFollowerUser).collect(Collectors.toList());
+        return toUserResponse(followerList);
+    }
+
+    //팔로잉유저 조회
+    @Transactional
+    public List<UserResponse> findFollowingList(String loginId){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        List<UserFollowing> userFollowingList = userFollowingRepository.findByUser(user);
+        List<User> followingList = userFollowingList.stream().map(UserFollowing::getFollowingUser).collect(Collectors.toList());
+        return toUserResponse(followingList);
     }
 
     //모든 유저 조회
