@@ -22,7 +22,7 @@ public class MailController {
     }
 
     //코드 인증
-    @GetMapping("/confirm")
+    @PostMapping("/confirm")
     public ResponseEntity<String> confirmNumber(@RequestBody @Valid MailRequest request){
         mailService.confirmAuthNumber(request);
         return ResponseEntity.ok("인증에 성공하였습니다.");
