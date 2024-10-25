@@ -20,9 +20,13 @@ import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserLoginIdException;
 import sisyphus_core.sisyphus_core.auth.exception.DuplicateUserNicknameException;
 import sisyphus_core.sisyphus_core.auth.model.Token;
 import sisyphus_core.sisyphus_core.auth.model.User;
+import sisyphus_core.sisyphus_core.auth.model.UserFollower;
+import sisyphus_core.sisyphus_core.auth.model.UserFollowing;
 import sisyphus_core.sisyphus_core.auth.model.dto.TokenResponse;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserResponse;
+import sisyphus_core.sisyphus_core.auth.repository.UserFollowerRepository;
+import sisyphus_core.sisyphus_core.auth.repository.UserFollowingRepository;
 import sisyphus_core.sisyphus_core.auth.service.TokenService;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
 import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
@@ -50,6 +54,12 @@ public class AuthTest {
     @Autowired
     private TestRestTemplate testRestTemplate;
 
+    @Autowired
+    private UserFollowerRepository userFollowerRepository;
+
+    @Autowired
+    private UserFollowingRepository userFollowingRepository;
+
     @BeforeEach
     void before(){
         UserRequest.register register1= UserRequest.register.builder()
@@ -68,8 +78,17 @@ public class AuthTest {
                 .name("test2")
                 .build();
 
+        UserRequest.register register3= UserRequest.register.builder()
+                .loginId("테스트3")
+                .password("1234")
+                .nickname("test3")
+                .email("test3@test.com")
+                .name("test3")
+                .build();
+
         userService.register(register1);
         userService.register(register2);
+        userService.register(register3);
     }
 
     @AfterEach
@@ -80,20 +99,20 @@ public class AuthTest {
     @Test
     @DisplayName("유저 회원가입")
     void userRegister(){
-        UserRequest.register register2= UserRequest.register.builder()
-                .loginId("테스트3")
+        UserRequest.register register4= UserRequest.register.builder()
+                .loginId("테스트4")
                 .password("1234")
-                .nickname("test3")
-                .email("test3@test.com")
-                .name("test3")
+                .nickname("test4")
+                .email("test4@test.com")
+                .name("test4")
                 .build();
 
-        userService.register(register2);
+        userService.register(register4);
 
-        User test3 = userService.findByNickname("test3");
+        User test3 = userService.findByNickname("test4");
         List<UserResponse> allUser = userService.findAllUser();
-        assertThat(test3.getLoginId()).isEqualTo("테스트3");
-        assertThat(allUser.size()).isEqualTo(3);
+        assertThat(test3.getLoginId()).isEqualTo("테스트4");
+        assertThat(allUser.size()).isEqualTo(4);
     }
 
     @Test
@@ -179,10 +198,23 @@ public class AuthTest {
     @Test
     @DisplayName("회원 탈퇴")
     void userWithdrawal(){
+        userService.follow("테스트1","test2");
+        userService.follow("테스트1", "test3");
+
+        User test1 = userService.findByNickname("test1");
+        User test2 = userService.findByNickname("test2");
+        User test3 = userService.findByNickname("test3");
+
         userService.withdrawal("테스트1");
+        List<UserFollowing> test1FollowingUser = userFollowingRepository.findByUser(test1);
+        List<UserFollower> test2FollowerUser = userFollowerRepository.findByUser(test2);
+        List<UserFollower> test3FollowerUser = userFollowerRepository.findByUser(test3);
 
         List<UserResponse> allUser = userService.findAllUser();
-        assertThat(allUser.size()).isEqualTo(1);
+        assertThat(allUser.size()).isEqualTo(2);
+        assertThat(test1FollowingUser.size()).isEqualTo(0);
+        assertThat(test2FollowerUser.size()).isEqualTo(0);
+        assertThat(test3FollowerUser.size()).isEqualTo(0);
     }
 
     @Test
@@ -195,6 +227,7 @@ public class AuthTest {
                 .build();
 
         chatRoomService.createChatRoom(chatRegister, "테스트1");
+
 
         userService.withdrawal("테스트1");
         ChatRoom room = chatRoomService.findByRoomName("test2");
@@ -214,5 +247,32 @@ public class AuthTest {
     void findUserPassword(){
         UserResponse.find find = userService.findPassword("테스트2");
         assertThat(find.getPassword()).isEqualTo("1234");
+    }
+
+    @Test
+    @DisplayName("유저 팔로우/언팔로우")
+    void followUser(){
+        userService.follow("테스트1", "test2");
+        userService.follow("테스트1", "test3");
+
+        User test1 = userService.findByNickname("test1");
+        User test2 = userService.findByNickname("test2");
+        User test3 = userService.findByNickname("test3");
+        List<UserFollowing> test1FollowingUser = userFollowingRepository.findByUser(test1);
+        List<UserFollower> test2FollowerUser = userFollowerRepository.findByUser(test2);
+        List<UserFollower> test3FollowerUser = userFollowerRepository.findByUser(test3);
+
+        assertThat(test1FollowingUser.size()).isEqualTo(2);
+        assertThat(test2FollowerUser.size()).isEqualTo(1);
+        assertThat(test3FollowerUser.size()).isEqualTo(1);
+
+        userService.unfollow("테스트1", "test2");
+        List<UserFollowing> test1FollowingUser2 = userFollowingRepository.findByUser(test1);
+        List<UserFollower> test2FollowerUser2 = userFollowerRepository.findByUser(test2);
+        List<UserFollower> test3FollowerUser2 = userFollowerRepository.findByUser(test3);
+
+        assertThat(test1FollowingUser2.size()).isEqualTo(1);
+        assertThat(test2FollowerUser2.size()).isEqualTo(0);
+        assertThat(test3FollowerUser2.size()).isEqualTo(1);
     }
 }
