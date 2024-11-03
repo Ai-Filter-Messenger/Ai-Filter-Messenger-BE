@@ -42,6 +42,11 @@ public class UserController {
         return ResponseEntity.ok("로그아웃에 성공하였습니다.");
     }
 
+    @GetMapping("/info")
+    public ResponseEntity<UserResponse> info(Authentication auth){
+        return ResponseEntity.ok().body(userService.userInfo(auth.getName()));
+    }
+
     //정보변경
     @PutMapping("/modify")
     public ResponseEntity<String> modify(@RequestBody @Valid UserRequest.modify modify, Authentication auth){
