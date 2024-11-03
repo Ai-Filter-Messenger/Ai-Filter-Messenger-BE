@@ -26,4 +26,14 @@ public class UserResponse {
         private String loginId;
         private String password;
     }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class toChat{
+        private String nickname;
+        private String profileImageUrl;
+        private Long id;
+    }
 }

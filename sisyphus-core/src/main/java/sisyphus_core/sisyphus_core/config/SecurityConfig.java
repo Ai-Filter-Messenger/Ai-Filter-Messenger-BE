@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requests ->
                         requests
                                 .requestMatchers("/", "api/user/login", "/api/user/register" , "/api/user/check/loginId", "/api/user/check/nickname", "/api/user/find/loginId", "/api/user/find/password").permitAll()
-                                .requestMatchers("/api/mail/send", "/api/mail/confirm").permitAll()
+                                .requestMatchers("/api/mail/send", "/api/mail/confirm","/api/chat/**", "/api/file/**").permitAll()
                                 .requestMatchers("/chat/**").permitAll()
                                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                                 .anyRequest().authenticated())

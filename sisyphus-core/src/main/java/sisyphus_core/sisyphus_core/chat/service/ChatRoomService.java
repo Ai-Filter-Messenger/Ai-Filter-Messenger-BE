@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sisyphus_core.sisyphus_core.auth.model.User;
+import sisyphus_core.sisyphus_core.auth.model.dto.UserResponse;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
 import sisyphus_core.sisyphus_core.chat.exception.ChatRoomNotFoundException;
 import sisyphus_core.sisyphus_core.chat.exception.DuplicateChatRoomNameException;
@@ -304,7 +305,7 @@ public class ChatRoomService {
     protected List<ChatRoomResponse> toResponseChatRoom(List<UserChatRoom> userChatRoomsByUser) {
         List<ChatRoomResponse> roomResponses = new ArrayList<>();
         for (UserChatRoom userChatRoom : userChatRoomsByUser) {
-            List<String> profileImageUrls = new ArrayList<>();
+            List<UserResponse.toChat> userInfo = new ArrayList<>();
             ChatRoom chatRoom = userChatRoom.getChatRoom();
             List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
 
@@ -315,14 +316,17 @@ public class ChatRoomService {
             }
 
             for (UserChatRoom room : userChatRoomsByChatRoom) {
-                profileImageUrls.add(room.getUser().getProfileImageUrl());
+                User user = userChatRoom.getUser();
+                UserResponse.toChat infoToChat = UserResponse.toChat.builder().id(user.getId())
+                        .profileImageUrl(user.getProfileImageUrl()).nickname(user.getNickname()).build();
+                userInfo.add(infoToChat);
             }
 
             ChatRoomResponse chatRoomResponse = ChatRoomResponse.builder()
                     .chatRoomId(chatRoom.getChatRoomId())
                     .type(chatRoom.getType())
                     .roomName(chatRoom.getRoomName())
-                    .profileImages(profileImageUrls)
+                    .userInfo(userInfo)
                     .userCount(chatRoom.getUserCount())
                     .recentMessage(recentMessage)
                     .createAt(chatRoom.getCreateAt())
@@ -340,7 +344,7 @@ public class ChatRoomService {
     @Transactional
     protected ChatRoomResponse toResponseChatRoom(ChatRoom chatRoom) {
         List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
-        List<String> profileImageUrls = new ArrayList<>();
+        List<UserResponse.toChat> userInfo = new ArrayList<>();
 
         Message message = messageService.recentMessage(chatRoom.getChatRoomId());
         String recentMessage = "";
@@ -351,7 +355,10 @@ public class ChatRoomService {
         }
 
         for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
-            profileImageUrls.add(userChatRoom.getUser().getProfileImageUrl());
+            User user = userChatRoom.getUser();
+            UserResponse.toChat infoToChat = UserResponse.toChat.builder().id(user.getId())
+                    .profileImageUrl(user.getProfileImageUrl()).nickname(user.getNickname()).build();
+            userInfo.add(infoToChat);
         }
 
         return ChatRoomResponse.builder()
@@ -360,7 +367,7 @@ public class ChatRoomService {
                 .type(chatRoom.getType())
                 .NotificationCount(0)
                 .isFix(false)
-                .profileImages(profileImageUrls)
+                .userInfo(userInfo)
                 .recentMessage(recentMessage)
                 .createAt(createAt)
                 .userCount(chatRoom.getUserCount())
