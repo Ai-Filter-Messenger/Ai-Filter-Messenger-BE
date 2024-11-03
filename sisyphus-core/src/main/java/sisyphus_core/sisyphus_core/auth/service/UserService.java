@@ -104,7 +104,7 @@ public class UserService {
             User followerUser = userFollower.getFollowerUser();
             template.convertAndSend("/queue/state/" + followerUser.getNickname());
         }
-        return new TokenResponse(accessToken);
+        return new TokenResponse(accessToken, user.getNickname());
     }
 
     //로그아웃
@@ -224,6 +224,13 @@ public class UserService {
         return toUserResponse(followingList);
     }
 
+    //유저 조회
+    @Transactional
+    public UserResponse userInfo(String loginId){
+        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        return toUserResponseOnce(user);
+    }
+
     //모든 유저 조회
     @Transactional
     public List<UserResponse> findAllUser() {
@@ -259,5 +266,18 @@ public class UserService {
         }
 
         return userResponseList;
+    }
+
+    protected UserResponse toUserResponseOnce(User user){
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .loginId(user.getLoginId())
+                .name(user.getName())
+                .nickname(user.getNickname())
+                .userRole(user.getUserRole())
+                .profileImageUrl(user.getProfileImageUrl())
+                .state(user.getState())
+                .build();
     }
 }
