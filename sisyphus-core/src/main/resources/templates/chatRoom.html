@@ -209,43 +209,49 @@
                 <button id="createRoomBtn">Create</button>
             </div>
             <!-- roomList로부터 채팅방 목록 렌더링 -->
-            <div id="room-list">
-                <a th:each="room, stat : ${roomList}"
-                   th:href="@{/chat/{chatRoomId}/{loginId}(chatRoomId=${room.chatRoomId}, loginId=${user.loginId})}"
-                   class="list-group-item list-group-item-action d-flex align-items-center position-relative"
-                   style="background-color: #333; color: #ccc; border: none; margin-bottom: 10px; padding: 15px;"
-                   th:attr="data-room-id=${room.chatRoomId}, data-login-id=${user.loginId}">
+            <div class="room-list">
+                <div class="list-group" id="roomList">
+                    <div th:each="room : ${roomList}"
+                         class="list-group-item d-flex align-items-center position-relative"
+                         style="background-color: #333; color: #ccc; border: none; margin-bottom: 10px; padding: 15px;"
+                         th:attr="data-room-id=${room.chatRoomId}, data-login-id=${user.loginId}">
 
-                    <!-- 프로필 이미지 컨테이너 -->
-                    <div th:if="${room.profileImages.size() <= 3}" style="display: flex; align-items: center; justify-content: start; width: 80px; position: relative;">
-                        <img th:each="url, iterStat : ${room.profileImages}"
-                             th:if="${iterStat.index < 3}"
-                             th:src="@{${url}}"
-                             alt="Profile Image"
-                             th:style="'width: 25px; height: 25px; border-radius: 50%; position: absolute; left: ' + (${iterStat.index} * 10) + 'px; z-index: ' + (10 - ${iterStat.index}) + ';'">
-                    </div>
+                        <!-- Display profile images based on userInfo size -->
+                        <div th:if="${room.userInfo.size() <= 3}">
+                            <div style="display: flex; align-items: center; justify-content: start; width: 80px; position: relative;">
+                                <img th:each="user, userStat : ${room.userInfo}"
+                                     th:src="${user.profileImageUrl}"
+                                     alt="Profile Image"
+                                     th:style="'width: 25px; height: 25px; border-radius: 50%; position: absolute; left: ' + (${userStat.index} * 10) + 'px; z-index: ' + (10 - ${userStat.index}) + ';'" />
+                            </div>
+                        </div>
 
-                    <div th:if="${room.profileImages.size() > 3}" style="display: grid; grid-template-columns: repeat(2, 25px); grid-template-rows: repeat(2, 25px); gap: 5px;">
-                        <img th:each="url, iterStat : ${room.profileImages}"
-                             th:if="${iterStat.index < 4}"
-                             th:src="@{${url}}"
-                             alt="Profile Image"
-                             style="width: 25px; height: 25px; border-radius: 50%;">
-                    </div>
+                        <div th:if="${room.userInfo.size() > 3}">
+                            <div style="display: grid; grid-template-columns: repeat(2, 25px); grid-template-rows: repeat(2, 25px); gap: 5px;">
+                                <img th:each="user, userStat : ${room.userInfo}"
+                                     th:if="${userStat.index < 4}"
+                                     th:src="${user.profileImageUrl}"
+                                     alt="Profile Image"
+                                     style="width: 25px; height: 25px; border-radius: 50%;" />
+                            </div>
+                        </div>
 
-                    <!-- 방 정보 -->
-                    <div>
-                        <div style="font-weight: bold; color: #fff;" th:text="${room.roomName}">채팅방 이름</div>
-                        <span style="font-size: 12px; color: #aaa; margin-left: 10px;" th:text="'(' + ${room.userCount} + ')'">1</span>
-                        <div style="font-size: 12px; color: #aaa; margin-top: 5px;" th:text="${room.type}">일반채팅</div>
-                        <div style="font-size: 12px; color: #aaa; margin-top: 5px;" class="recent-message" th:text="${room.recentMessage}">최근 메시지: 안녕하세요</div>
+                        <!-- Room Information -->
+                        <div style="flex-grow: 1; margin-left: 10px;">
+                            <div style="font-weight: bold; color: #fff;" th:text="${room.roomName}">Room Name</div>
+                            <span style="font-size: 12px; color: #aaa; margin-left: 10px;" th:text="'(' + ${room.userCount} + ')'">2</span>
+                            <div style="font-size: 12px; color: #aaa; margin-top: 5px;" th:text="${room.type}">Type</div>
+                            <div style="font-size: 12px; color: #aaa; margin-top: 5px;" class="recent-message" th:text="${room.recentMessage}">Recent message here</div>
+                        </div>
+
+                        <!-- Notification Count -->
+                        <div style="margin-left: auto; display: flex; align-items: center;">
+                            <span class="notification-count"
+                                  style="background-color: #f00; color: white; border-radius: 50%; padding: 5px 10px; font-size: 12px;"
+                                  th:text="${room.notificationCount}">0</span>
+                        </div>
                     </div>
-                    <div style="margin-left: auto; display: flex; align-items: center;">
-                    <span class="notification-count"
-                          style="background-color: #f00; color: white; border-radius: 50%; padding: 5px 10px; font-size: 12px;"
-                          th:text="${room.notificationCount}">0</span>
-                    </div>
-                </a>
+                </div>
             </div>
         </div>
     </div>
@@ -285,6 +291,10 @@
         </div>
         <div class="chat-footer">
             <input type="text" id="messageInput" placeholder="Type a message">
+            <label for="fileInput" style="margin-right: 10px; margin-bottom: 0px; cursor: pointer; background-color: darkgray; color: white; padding: 10px 15px;">
+                Upload
+            </label>
+            <input type="file" id="fileInput" style="display: none;" multiple>
             <button type="button" id="sendBtn">Send</button>
         </div>
     </div>
@@ -292,7 +302,7 @@
 
 <script>
     let stompClient = null;
-    const roomId = [[${room.chatRoomId}]]; // 방 ID
+    const roomId = '[[${room.chatRoomId}]]'; // 방 ID
     const senderName = '[[${user.name}]]'; // 유저 이름
     const senderId = '[[${user.id}]]'; // 유저 ID
 
@@ -448,7 +458,21 @@
             messageElement.classList.add('other');
         }
 
-        messageElement.innerHTML = `<span class="sender">${message.senderName}:</span> ${message.message}`;
+        if (message.type === 'FILE') {
+            // 파일 URL들을 세미콜론으로 분리
+            const fileUrls = message.message.split(',');
+            fileUrls.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'Uploaded Image';
+                img.style.maxWidth = '200px';
+                img.style.marginTop = '5px';
+                messageElement.appendChild(img);
+            });
+        } else {
+            // 일반 텍스트 메시지의 경우
+            messageElement.innerHTML = `${message.message}`;
+        }
         messageContainer.appendChild(messageElement);
         messageContainer.scrollTop = messageContainer.scrollHeight;
     }
@@ -557,23 +581,54 @@
             });
     });
 
-    function resetNotification(roomId, nickname){
-        const notificationData = {
-            roomId : roomId,
-            nickname : nickname
-        };
-
-        stompClient.send("/app/chat/reset/notification", {}, JSON.stringify(notificationData));
-    }
-
     document.querySelectorAll('.list-group-item').forEach(item => {
         item.addEventListener('click', function() {
             const roomId = this.getAttribute('data-room-id');
             const nickname = this.getAttribute('data-login-id');
 
+            console.log(roomId, nickname); // 여기서 값이 1과 test1로 나오는지 확인합니다.
+
             // 채팅방에 입장하는 시점에 알림 리셋
             resetNotification(roomId, nickname);
+
+            window.location.href = `/chat/${roomId}/${nickname}`;
         });
+    });
+
+    function resetNotification(roomId, nickname){
+        const notificationData = {
+            roomId: roomId,
+            nickname: nickname
+        };
+
+        stompClient.send("/app/chat/reset/notification", {}, JSON.stringify(notificationData));
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            const formData = new FormData();
+            formData.append('roomId', roomId);
+            formData.append('loginId', senderName)
+            for (const file of files) {
+                formData.append('files', file);
+            }
+
+            // 파일 업로드 API 호출 (POST /api/file/upload)
+            fetch('/api/file/upload', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.text())
+                .then(result => {
+                    console.log('파일 업로드 성공:', result);
+                    alert('파일 업로드 성공');
+                })
+                .catch(error => {
+                    console.error('파일 업로드 실패:', error);
+                    alert('파일 업로드 실패');
+                });
+        }
     });
 
     connect();

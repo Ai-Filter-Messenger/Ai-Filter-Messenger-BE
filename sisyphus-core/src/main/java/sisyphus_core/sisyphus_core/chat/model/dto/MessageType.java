@@ -1,5 +1,5 @@
 package sisyphus_core.sisyphus_core.chat.model.dto;
 
 public enum MessageType {
-    MESSAGE, JOIN, INVITE, LEAVE
+    MESSAGE, JOIN, INVITE, LEAVE, FILE
 }
