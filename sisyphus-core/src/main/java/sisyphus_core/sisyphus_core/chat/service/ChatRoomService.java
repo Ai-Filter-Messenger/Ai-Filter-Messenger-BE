@@ -316,7 +316,7 @@ public class ChatRoomService {
             }
 
             for (UserChatRoom room : userChatRoomsByChatRoom) {
-                User user = userChatRoom.getUser();
+                User user = room.getUser();
                 UserResponse.toChat infoToChat = UserResponse.toChat.builder().id(user.getId())
                         .profileImageUrl(user.getProfileImageUrl()).nickname(user.getNickname()).build();
                 userInfo.add(infoToChat);
