@@ -12,8 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import sisyphus_core.sisyphus_core.auth.model.User;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
+import sisyphus_core.sisyphus_core.chat.exception.ChatRoomNotFoundException;
+import sisyphus_core.sisyphus_core.chat.model.ChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.Message;
+import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
 import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
+import sisyphus_core.sisyphus_core.chat.repository.ChatRoomRepository;
+import sisyphus_core.sisyphus_core.chat.repository.UserChatRoomRepository;
 import sisyphus_core.sisyphus_core.chat.service.KafkaProducerService;
 import sisyphus_core.sisyphus_core.file.model.UploadFile;
 import sisyphus_core.sisyphus_core.file.model.dto.UploadFileResponse;
@@ -34,6 +39,8 @@ public class FileService {
     private final FileRepository fileRepository;
     private final SimpMessagingTemplate template;
     private final KafkaProducerService kafkaProducerService;
+    private final ChatRoomRepository chatRoomRepository;
+    private final UserChatRoomRepository userChatRoomRepository;
 
     @Value("${aws.cloud.s3.bucket}")
     private String bucket;
@@ -44,6 +51,8 @@ public class FileService {
     @Transactional
     public String upload(List<MultipartFile> files, Long roomId, String loginId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+        List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
         String fileUrl = "";
         StringBuilder fileUrls = new StringBuilder();
         for (MultipartFile file : files) {
@@ -60,6 +69,9 @@ public class FileService {
         Message message = Message.builder().message(fileUrls.toString()).roomId(roomId).type(MessageType.FILE).senderName(user.getNickname()).build();
         kafkaProducerService.sendMessage(message);
         template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
+        for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
+            template.convertAndSend("/queue/chatroom/" + userChatRoom.getUser().getNickname(), message);
+        }
 
         return fileUrl;
     }
