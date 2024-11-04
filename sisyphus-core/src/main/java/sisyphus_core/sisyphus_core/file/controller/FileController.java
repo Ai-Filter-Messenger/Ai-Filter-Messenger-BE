@@ -20,8 +20,8 @@ public class FileController {
     @PostMapping("/upload")
     public ResponseEntity<String> upload(@RequestPart("files")List<MultipartFile> files,
                                          @RequestParam("roomId") Long roomId,
-                                         @RequestParam("loginId") String auth){
-        return ResponseEntity.ok().body(fileService.upload(files, roomId, auth));
+                                         Authentication auth){
+        return ResponseEntity.ok().body(fileService.upload(files, roomId, auth.getName()));
     }
 
     @GetMapping("/find")
