@@ -311,8 +311,14 @@ public class ChatRoomService {
 
             Message message = messageService.recentMessage(chatRoom.getChatRoomId());
             String recentMessage = "";
+            ZonedDateTime createAt = null;
             if(message != null){
-                recentMessage = message.getMessage();
+                if(message.getType().equals(MessageType.FILE)){
+                    recentMessage = message.getSenderName() + "님이 사진을 보냈습니다.";
+                }else{
+                    recentMessage = message.getMessage();
+                }
+                createAt = message.getCreateAt();
             }
 
             for (UserChatRoom room : userChatRoomsByChatRoom) {
@@ -329,7 +335,7 @@ public class ChatRoomService {
                     .userInfo(userInfo)
                     .userCount(chatRoom.getUserCount())
                     .recentMessage(recentMessage)
-                    .createAt(chatRoom.getCreateAt())
+                    .createAt(createAt)
                     .NotificationCount(userChatRoom.getNotificationCount())
                     .isFix(userChatRoom.isFix())
                     .build();
