@@ -44,7 +44,9 @@ public class MessageService {
         ChatRoom chatRoom = chatRoomRepository.findById(message.getRoomId()).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
         List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
         for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
-            userChatRoom.upCount();
+            if(!userChatRoom.getUser().getNickname().equals(message.getSenderName())) {
+                userChatRoom.upCount();
+            }
             template.convertAndSend("/queue/chatroom/" + userChatRoom.getUser().getNickname(), message);
         }
         kafkaProducerService.sendMessage(message);
