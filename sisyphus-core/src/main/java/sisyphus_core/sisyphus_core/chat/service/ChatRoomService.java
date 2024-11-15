@@ -253,6 +253,7 @@ public class ChatRoomService {
         messageService.leave(message);
         deleteUserJoinTime(chatRoom.getChatRoomId(), user.getLoginId());
 
+        template.convertAndSend("/queue/chatroom/list/" + user.getNickname(), toResponseChatRoom(chatRoom));
         if(chatRoom.getUserCount() == 0) chatRoomRepository.deleteById(leave.getChatRoomId());
         else chatRoomRepository.save(chatRoom);
     }

@@ -72,7 +72,7 @@ public class ChatController {
     }
 
     //채팅방 고정
-    @PutMapping("/fix/toggle")
+    @PutMapping("/pin/toggle")
     public ResponseEntity<String> toggleChatRoom(@RequestParam Long chatRoomId, Authentication auth){
         return ResponseEntity.ok(chatRoomService.toggleChatRoom(chatRoomId, auth.getName()));
     }
