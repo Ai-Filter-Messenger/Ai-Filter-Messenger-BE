@@ -24,4 +24,16 @@ public class ChatRoomResponse {
     private ZonedDateTime createAt;
     private boolean isFix;
     private int NotificationCount;
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class OpenChatRoom {
+        private String roomName;
+        private String chatroomImage;
+        private ZonedDateTime createAt;
+        private int userCount;
+        private String recentMessage;
+    }
 }

@@ -31,6 +31,7 @@ public class ChatController {
         return ResponseEntity.ok().body(room);
     }
 
+    //채팅방 수정
     @PutMapping("/modify")
     public ResponseEntity<String> modifyChatRoom(@RequestBody @Valid ChatRoomRequest.modify modify,Authentication auth){
         chatRoomService.modifyChatRoom(modify, auth.getName());
@@ -72,8 +73,13 @@ public class ChatController {
     }
 
     //채팅방 고정
-    @PutMapping("/fix/toggle")
+    @PutMapping("/pin/toggle")
     public ResponseEntity<String> toggleChatRoom(@RequestParam Long chatRoomId, Authentication auth){
         return ResponseEntity.ok(chatRoomService.toggleChatRoom(chatRoomId, auth.getName()));
+    }
+
+    @GetMapping("/find/list/open")
+    public ResponseEntity<List<ChatRoomResponse.OpenChatRoom>> getOpenChatList(){
+        return ResponseEntity.ok().body(chatRoomService.getOpenChatRooms());
     }
 }

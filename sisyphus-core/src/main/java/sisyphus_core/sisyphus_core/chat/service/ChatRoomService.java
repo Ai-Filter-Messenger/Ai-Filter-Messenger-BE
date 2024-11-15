@@ -2,6 +2,7 @@ package sisyphus_core.sisyphus_core.chat.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -40,12 +41,17 @@ public class ChatRoomService {
     private final String CHAT_ROOM_FIX = "채팅방을 고정하였습니다.";
     private final String CHAT_ROOM_UNFIX = "채팅방 고정을 해제하였습니다.";
 
+    @Value("${default.open.image.url}")
+    private String defaultChatImage;
+
     //채팅 방 생성
     @Transactional
     public ChatRoom createChatRoom(ChatRoomRequest.register register,String loginId){
         String roomName = register.getRoomName();
         String[] nicknames = register.getNicknames();
-        String type = register.getType();
+        String type = register.getType().toLowerCase();
+        String chatRoomImage = register.getChatRoomImage();
+        if(chatRoomImage.equals("open")) chatRoomImage = defaultChatImage;
         boolean customRoomName = true;
 
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
@@ -77,6 +83,7 @@ public class ChatRoomService {
                 .userCount(nicknames.length + 1)
                 .type(chatRoomType)
                 .customRoomName(customRoomName)
+                .chatRoomImage(chatRoomImage)
                 .build();
 
         chatRoomRepository.save(chatRoom);
@@ -115,6 +122,7 @@ public class ChatRoomService {
             template.convertAndSend("/queue/chatroom/list/" + nickname, toResponseChatRoom(chatRoom));
         }
 
+        if(type.equals("open")) createMessage = user.getNickname() + "님이 오픈채팅방을 생성하셨습니다.";
         Message message = Message.builder().type(MessageType.INVITE).message(createMessage).roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).build();
         messageService.join(message);
         template.convertAndSend("/queue/chatroom/list/" + user.getNickname(), toResponseChatRoom(chatRoom));
@@ -253,6 +261,7 @@ public class ChatRoomService {
         messageService.leave(message);
         deleteUserJoinTime(chatRoom.getChatRoomId(), user.getLoginId());
 
+        template.convertAndSend("/queue/chatroom/list/" + user.getNickname(), toResponseChatRoom(chatRoom));
         if(chatRoom.getUserCount() == 0) chatRoomRepository.deleteById(leave.getChatRoomId());
         else chatRoomRepository.save(chatRoom);
     }
@@ -298,6 +307,30 @@ public class ChatRoomService {
             userChatRoom.setFix(false);
             return CHAT_ROOM_UNFIX;
         }
+    }
+
+    //오픈채팅방 리스트
+    @Transactional
+    public List<ChatRoomResponse.OpenChatRoom> getOpenChatRooms(){
+        List<ChatRoom> openChatRooms = chatRoomRepository.findByType(ChatRoomType.OPEN);
+
+        return toOpenChatRoom(openChatRooms);
+    }
+
+    protected List<ChatRoomResponse.OpenChatRoom> toOpenChatRoom(List<ChatRoom> openChatRooms){
+        List<ChatRoomResponse.OpenChatRoom> openChatRoomList = new ArrayList<>();
+        for (ChatRoom openChatRoom : openChatRooms) {
+            Message message = messageService.recentMessage(openChatRoom.getChatRoomId());
+            ChatRoomResponse.OpenChatRoom openChatRoom1 = ChatRoomResponse.OpenChatRoom.builder()
+                    .roomName(openChatRoom.getRoomName())
+                    .chatroomImage(openChatRoom.getChatRoomImage())
+                    .recentMessage(message.getMessage())
+                    .createAt(message.getCreateAt())
+                    .userCount(openChatRoom.getUserCount())
+                    .build();
+            openChatRoomList.add(openChatRoom1);
+        }
+        return openChatRoomList;
     }
 
     //ResponseChatRoom으로 변환 -> 채팅방리스트 DTO
