@@ -57,6 +57,7 @@ public class SisyphusCoreApplication {
 		String[] nicknames = new String[]{"test2"};
 		ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
 						.roomName("채팅방1번")
+						.chatRoomImage("")
 						.nicknames(nicknames)
 						.type("general")
 						.build();
@@ -64,6 +65,7 @@ public class SisyphusCoreApplication {
 		String[] nicknames2 = new String[]{"test2", "test3"};
 		ChatRoomRequest.register chatRegister2 = ChatRoomRequest.register.builder()
 				.roomName("채팅방2번")
+				.chatRoomImage("https://search.pstatic.net/sunny/?src=https%3A%2F%2Fi.pinimg.com%2F736x%2F6e%2F9d%2F3c%2F6e9d3cb56fcc872ca8bbb7b62293a9af.jpg&type=sc960_832")
 				.nicknames(nicknames2)
 				.type("open")
 				.build();
