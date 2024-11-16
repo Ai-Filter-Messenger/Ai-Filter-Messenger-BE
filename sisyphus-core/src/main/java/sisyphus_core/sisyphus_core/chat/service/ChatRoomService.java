@@ -364,7 +364,8 @@ public class ChatRoomService {
             ChatRoomResponse chatRoomResponse = ChatRoomResponse.builder()
                     .chatRoomId(chatRoom.getChatRoomId())
                     .type(chatRoom.getType())
-                    .roomName(chatRoom.getRoomName())
+                    .roomName(chatRoom.isCustomRoomName() ? chatRoom.getRoomName() : null) // customRoomName이 true일 때만 roomName 사용
+                    .customRoomName(chatRoom.isCustomRoomName() ? chatRoom.getRoomName() : null) // 사용자 정의 이름으로 설정
                     .userInfo(userInfo)
                     .userCount(chatRoom.getUserCount())
                     .recentMessage(recentMessage)
