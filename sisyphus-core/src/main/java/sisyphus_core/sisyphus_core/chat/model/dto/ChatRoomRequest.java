@@ -14,8 +14,17 @@ public class ChatRoomRequest {
     public static class register{
         private String roomName;
         private String[] nicknames;
-        private String loginId;
         private String type;
+        private String chatRoomImage;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class modify{
+        private Long chatRoomId;
+        private String newRoomName;
     }
 
     @Getter
@@ -24,7 +33,7 @@ public class ChatRoomRequest {
     @Builder
     public static class invite{
         private Long chatRoomId;
-        private String loginId;
+        private String[] nicknames;
     }
 
     @Getter
@@ -40,7 +49,15 @@ public class ChatRoomRequest {
     @NoArgsConstructor
     @Builder
     public static class leave{
-        private String loginId;
         private Long chatRoomId;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class notification{
+        private Long roomId;
+        private String nickname;
     }
 }

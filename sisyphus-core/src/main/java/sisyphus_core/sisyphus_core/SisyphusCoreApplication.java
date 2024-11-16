@@ -20,7 +20,7 @@ public class SisyphusCoreApplication {
 		SpringApplication.run(SisyphusCoreApplication.class, args);
 	}
 
-//	@PostConstruct
+	@PostConstruct
 	public void postData(){
 		UserRequest.register register1= UserRequest.register.builder()
 				.loginId("test1")
@@ -46,18 +46,26 @@ public class SisyphusCoreApplication {
 				.name("test3")
 				.build();
 
+		UserRequest.register register4= UserRequest.register.builder()
+				.loginId("test4")
+				.password("1234")
+				.nickname("test4")
+				.email("test4@test.com")
+				.name("test4")
+				.build();
+
 		String[] nicknames = new String[]{"test2"};
 		ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
-						.loginId("test1")
 						.roomName("채팅방1번")
+						.chatRoomImage("")
 						.nicknames(nicknames)
 						.type("general")
 						.build();
 
 		String[] nicknames2 = new String[]{"test2", "test3"};
 		ChatRoomRequest.register chatRegister2 = ChatRoomRequest.register.builder()
-				.loginId("test1")
 				.roomName("채팅방2번")
+				.chatRoomImage("https://search.pstatic.net/sunny/?src=https%3A%2F%2Fi.pinimg.com%2F736x%2F6e%2F9d%2F3c%2F6e9d3cb56fcc872ca8bbb7b62293a9af.jpg&type=sc960_832")
 				.nicknames(nicknames2)
 				.type("open")
 				.build();
@@ -65,8 +73,9 @@ public class SisyphusCoreApplication {
 		userService.register(register1);
 		userService.register(register2);
 		userService.register(register3);
-		chatRoomService.createRoom(chatRegister);
-		chatRoomService.createRoom(chatRegister2);
+		userService.register(register4);
+		chatRoomService.createChatRoom(chatRegister, "test1");
+		chatRoomService.createChatRoom(chatRegister2, "test1");
 	}
 
 }

@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
 import sisyphus_core.sisyphus_core.chat.model.Message;
+import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
+import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 @Controller
@@ -15,23 +17,15 @@ public class MessageController {
 
     private final MessageService messageService;
 
-    @MessageMapping("/join")
-    public void join(Message message) {
-      log.info("MessageMapping /chat/join");
-      message.setMessage(message.getSenderName() + "님이 입장하셨습니다.");
-      messageService.join(message);
-    }
-
-    @MessageMapping("/leave")
-    public void leave(Message message) {
-        log.info("MessageMapping /chat/leave");
-        message.setMessage(message.getSenderName() + "님이 퇴장하셨습니다.");
-        messageService.leave(message);
-    }
-
     @MessageMapping("/send")
     public void send(Message message) {
+        message.setType(MessageType.MESSAGE);
         log.info("MessageMapping /chat/send");
         messageService.sendMessage(message);
+    }
+
+    @MessageMapping("/reset/notification")
+    public void resetNotification(ChatRoomRequest.notification notification){
+        messageService.resetNotification(notification);
     }
 }

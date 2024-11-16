@@ -10,7 +10,11 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import sisyphus_core.sisyphus_core.auth.model.jwt.JwtFilter;
+import sisyphus_core.sisyphus_core.auth.model.jwt.JwtUtil;
+import sisyphus_core.sisyphus_core.auth.service.TokenService;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,7 +24,8 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final AuthenticationConfiguration authenticationConfiguration;
+    private final JwtUtil jwtUtil;
+    private final TokenService tokenService;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -36,10 +41,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests ->
                         requests
-                                .requestMatchers("/", "/api/user/register" , "/api/user/check/loginId", "/api/user/check/nickname", "/api/chat/**", "/api/chat/join").permitAll()
+                                .requestMatchers("/", "api/user/login", "/api/user/register" , "/api/user/check/loginId", "/api/user/check/nickname", "/api/user/find/loginId", "/api/user/find/password").permitAll()
+                                .requestMatchers("/api/mail/send", "/api/mail/confirm","/api/chat/**", "/api/file/**").permitAll()
                                 .requestMatchers("/chat/**").permitAll()
                                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                                .anyRequest().authenticated());
+                                .anyRequest().authenticated())
+                .addFilterBefore(new JwtFilter(jwtUtil, tokenService), UsernamePasswordAuthenticationFilter.class);
 
         //Cors setting
         http

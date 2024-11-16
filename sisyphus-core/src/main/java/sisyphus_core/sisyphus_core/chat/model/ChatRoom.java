@@ -28,7 +28,11 @@ public class ChatRoom {
     @Enumerated(value = EnumType.STRING)
     private ChatRoomType type;
 
+    @Setter
     private boolean customRoomName;
+
+    @Setter
+    private String chatRoomImage;
 
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

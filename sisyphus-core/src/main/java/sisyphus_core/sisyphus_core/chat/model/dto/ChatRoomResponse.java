@@ -18,6 +18,7 @@ public class ChatRoomResponse {
     private Long chatRoomId;
     private ChatRoomType type;
     private String roomName;
+    private String customRoomName;  // 사용자 정의 이름 추가
     private List<UserResponse.toChat> userInfo;
     private int userCount;
     private String recentMessage;

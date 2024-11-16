@@ -3,10 +3,8 @@ package sisyphus_core.sisyphus_core.auth.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserRole;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserState;
 import sisyphus_core.sisyphus_core.chat.model.UserChatRoom;
@@ -46,6 +44,7 @@ public class User {
     private String profileImageUrl;
 
     @Enumerated(value = EnumType.STRING)
+    @Setter
     private UserState state;
 
     @Enumerated(value = EnumType.STRING)
@@ -57,4 +56,13 @@ public class User {
 
     @Builder.Default
     private ZonedDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+
+    public void modify(UserRequest.modify modify){
+        this.password = modify.getPassword();
+        this.email = modify.getEmail();
+        this.nickname = modify.getNickname();
+        this.name = modify.getName();
+        this.describe = modify.getDescribe();
+        this.profileImageUrl = modify.getProfileImageUrl();
+    }
 }
