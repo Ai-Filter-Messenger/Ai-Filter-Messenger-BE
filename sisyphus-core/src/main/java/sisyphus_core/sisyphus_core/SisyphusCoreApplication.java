@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.multipart.MultipartFile;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserRequest;
 import sisyphus_core.sisyphus_core.auth.service.UserService;
 import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomRequest;
@@ -78,8 +79,8 @@ public class SisyphusCoreApplication {
 		userService.register(register2);
 		userService.register(register3);
 		userService.register(register4);
-		chatRoomService.createChatRoom(chatRegister, "test1");
-		chatRoomService.createChatRoom(chatRegister2, "test1");
+		chatRoomService.createChatRoom(chatRegister, null,"test1");
+		chatRoomService.createChatRoom(chatRegister2, null,"test1");
 	}
 
 }

@@ -84,6 +84,12 @@ public class FileService {
     }
 
     @Transactional
+    public String uploadAtChatRoom(MultipartFile file){
+        Map<String, Object> fileInfo = uploadFile(file);
+        return (String) fileInfo.get("fileUrl");
+    }
+
+    @Transactional
     public List<UploadFileResponse> findByUser(String loginId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         return toResponse(fileRepository.findByNickname(user.getNickname()));
