@@ -1,5 +1,7 @@
 package sisyphus_core.sisyphus_core.chat.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +29,14 @@ public class ChatController {
 
     //채팅방 생성
     @PostMapping("/create")
-    public ResponseEntity<ChatRoom> createChatRoom(@RequestPart("file")MultipartFile file,
-                                                    @RequestBody @Valid ChatRoomRequest.register register,
-                                                   Authentication auth){
-        ChatRoom room = chatRoomService.createChatRoom(register, file,auth.getName());
+    public ResponseEntity<ChatRoom> createChatRoom(
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @RequestPart(value = "register") String registerJson,
+            Authentication auth) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ChatRoomRequest.register register = objectMapper.readValue(registerJson, ChatRoomRequest.register.class);
+
+        ChatRoom room = chatRoomService.createChatRoom(register, file, auth.getName());
         return ResponseEntity.ok().body(room);
     }
 
