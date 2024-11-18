@@ -66,6 +66,7 @@ public class UserService {
                 .email(register.getEmail())
                 .name(register.getName())
                 .describe(" ")
+                .phoneNumber(register.getPhoneNumber())
                 .profileImageUrl(defProfileImage)
                 .state(UserState.ACTIVE)
                 .userRole(UserRole.GENERAL)
