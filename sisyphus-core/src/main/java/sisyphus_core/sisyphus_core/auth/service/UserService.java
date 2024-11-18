@@ -103,7 +103,7 @@ public class UserService {
         List<UserFollower> userFollowerList = userFollowerRepository.findByUser(user);
         for (UserFollower userFollower : userFollowerList) {
             User followerUser = userFollower.getFollowerUser();
-            template.convertAndSend("/queue/state/" + followerUser.getNickname());
+            template.convertAndSend("/queue/state/" + followerUser.getNickname(), user.getNickname());
         }
         return new TokenResponse(accessToken, user.getNickname());
     }

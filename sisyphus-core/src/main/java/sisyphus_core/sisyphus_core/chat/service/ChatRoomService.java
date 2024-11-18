@@ -8,6 +8,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import sisyphus_core.sisyphus_core.auth.model.User;
 import sisyphus_core.sisyphus_core.auth.model.dto.UserResponse;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
@@ -22,6 +23,7 @@ import sisyphus_core.sisyphus_core.chat.model.dto.ChatRoomType;
 import sisyphus_core.sisyphus_core.chat.model.dto.MessageType;
 import sisyphus_core.sisyphus_core.chat.repository.ChatRoomRepository;
 import sisyphus_core.sisyphus_core.chat.repository.UserChatRoomRepository;
+import sisyphus_core.sisyphus_core.file.service.FileService;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -38,6 +40,7 @@ public class ChatRoomService {
     private final MessageService messageService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SimpMessagingTemplate template;
+    private final FileService fileService;
     private final String CHAT_ROOM_FIX = "채팅방을 고정하였습니다.";
     private final String CHAT_ROOM_UNFIX = "채팅방 고정을 해제하였습니다.";
 
@@ -46,12 +49,13 @@ public class ChatRoomService {
 
     //채팅 방 생성
     @Transactional
-    public ChatRoom createChatRoom(ChatRoomRequest.register register,String loginId){
+    public ChatRoom createChatRoom(ChatRoomRequest.register register, MultipartFile file, String loginId){
         String roomName = register.getRoomName();
         String[] nicknames = register.getNicknames();
         String type = register.getType().toLowerCase();
-        String chatRoomImage = register.getChatRoomImage();
-        if(chatRoomImage.equals("open")) chatRoomImage = defaultChatImage;
+        String chatRoomImage = defaultChatImage;
+
+        if(file != null) chatRoomImage = fileService.uploadAtChatRoom(file);
         boolean customRoomName = true;
 
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));

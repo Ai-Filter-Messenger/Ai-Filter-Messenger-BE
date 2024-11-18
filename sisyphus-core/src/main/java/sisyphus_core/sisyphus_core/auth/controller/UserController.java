@@ -87,6 +87,11 @@ public class UserController {
         return ResponseEntity.ok("사용 가능한 닉네임입니다.");
     }
 
+    @GetMapping("/list")
+    public ResponseEntity<List<UserResponse>> findAll() {
+        return ResponseEntity.ok().body(userService.findAllUser());
+    }
+
     //유저 팔로우
     @PutMapping("/follow")
     public ResponseEntity<String> follow(@RequestParam String nickname,Authentication auth){
