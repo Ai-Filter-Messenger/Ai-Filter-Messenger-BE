@@ -50,8 +50,7 @@ public class ChatRoomService {
         String roomName = register.getRoomName();
         String[] nicknames = register.getNicknames();
         String type = register.getType().toLowerCase();
-        String chatRoomImage = register.getChatRoomImage();
-        if(chatRoomImage.equals("open")) chatRoomImage = defaultChatImage;
+        String chatRoomImage = defaultChatImage;
         boolean customRoomName = true;
 
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
