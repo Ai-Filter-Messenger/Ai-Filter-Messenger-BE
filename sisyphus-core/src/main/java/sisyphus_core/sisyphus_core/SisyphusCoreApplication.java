@@ -28,6 +28,7 @@ public class SisyphusCoreApplication {
 				.nickname("test1")
 				.email("test1@test.com")
 				.name("test1")
+				.phoneNumber("010-1111-1111")
 				.build();
 
 		UserRequest.register register2= UserRequest.register.builder()
@@ -36,6 +37,7 @@ public class SisyphusCoreApplication {
 				.nickname("test2")
 				.email("test2@test.com")
 				.name("test2")
+				.phoneNumber("010-2222-2222")
 				.build();
 
 		UserRequest.register register3= UserRequest.register.builder()
@@ -44,6 +46,7 @@ public class SisyphusCoreApplication {
 				.nickname("test3")
 				.email("test3@test.com")
 				.name("test3")
+				.phoneNumber("010-3333-3333")
 				.build();
 
 		UserRequest.register register4= UserRequest.register.builder()
@@ -52,6 +55,7 @@ public class SisyphusCoreApplication {
 				.nickname("test4")
 				.email("test4@test.com")
 				.name("test4")
+				.phoneNumber("010-4444-4444")
 				.build();
 
 		String[] nicknames = new String[]{"test2"};
