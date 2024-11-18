@@ -66,6 +66,7 @@ public class UserService {
                 .email(register.getEmail())
                 .name(register.getName())
                 .describe(" ")
+                .phoneNumber(register.getPhoneNumber())
                 .profileImageUrl(defProfileImage)
                 .state(UserState.ACTIVE)
                 .userRole(UserRole.GENERAL)
@@ -226,8 +227,13 @@ public class UserService {
 
     //유저 조회
     @Transactional
-    public UserResponse userInfo(String loginId){
-        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+    public UserResponse userInfo(String loginId,String nickname){
+        User user;
+        if(nickname == null){
+            user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        } else {
+            user = userRepository.findByNickname(nickname).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        }
         return toUserResponseOnce(user);
     }
 
@@ -276,6 +282,7 @@ public class UserService {
                 .name(user.getName())
                 .nickname(user.getNickname())
                 .userRole(user.getUserRole())
+                .phoneNumber(user.getPhoneNumber())
                 .profileImageUrl(user.getProfileImageUrl())
                 .state(user.getState())
                 .build();
