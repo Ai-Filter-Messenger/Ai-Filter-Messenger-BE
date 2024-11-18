@@ -58,7 +58,7 @@ public class FileService {
         for (MultipartFile file : files) {
             fileUrl = uploadFile(file);
             fileUrls.append(fileUrl).append(",");
-            UploadFile uploadFile = UploadFile.builder().nickname(user.getNickname()).fileUrl(fileUrl).build();
+            UploadFile uploadFile = UploadFile.builder().nickname(user.getNickname()).fileUrl(fileUrl).chatRoomId(roomId).build();
             fileRepository.save(uploadFile);
         }
 
@@ -80,6 +80,12 @@ public class FileService {
     public List<UploadFileResponse> findByUser(String loginId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         return toResponse(fileRepository.findByNickname(user.getNickname()));
+    }
+
+    @Transactional
+    public List<UploadFileResponse> findByChatRoom(Long chatRoomId){
+        List<UploadFile> byChatRoomId = fileRepository.findByChatRoomId(chatRoomId);
+        return toResponse(byChatRoomId);
     }
 
     public String uploadFile(MultipartFile file){
