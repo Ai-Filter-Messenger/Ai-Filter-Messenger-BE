@@ -326,6 +326,7 @@ public class ChatRoomService {
         for (ChatRoom openChatRoom : openChatRooms) {
             Message message = messageService.recentMessage(openChatRoom.getChatRoomId());
             ChatRoomResponse.OpenChatRoom openChatRoom1 = ChatRoomResponse.OpenChatRoom.builder()
+                    .chatRoomId(openChatRoom.getChatRoomId()) // chatRoomId 추가
                     .roomName(openChatRoom.getRoomName())
                     .chatroomImage(openChatRoom.getChatRoomImage())
                     .recentMessage(message.getMessage())

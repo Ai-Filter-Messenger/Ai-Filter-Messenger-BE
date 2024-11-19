@@ -31,6 +31,7 @@ public class ChatRoomResponse {
     @AllArgsConstructor
     @Builder
     public static class OpenChatRoom {
+        private Long chatRoomId; // 채팅방 ID 추가
         private String roomName;
         private String chatroomImage;
         private ZonedDateTime createAt;
