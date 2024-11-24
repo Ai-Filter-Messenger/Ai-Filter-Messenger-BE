@@ -30,6 +30,7 @@ import sisyphus_core.sisyphus_core.chat.service.MessageService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -58,6 +59,10 @@ public class UserService {
         if (userRepository.findByNickname(register.getNickname()).isPresent()) {
             throw new DuplicateUserException("이미 존재하는 아이디입니다.");
         }
+        String profileImage = register.getProfileImageUrl();
+        if(register.getProfileImageUrl() == null){
+            profileImage = defProfileImage;
+        }
 
         User user = User.builder()
                 .loginId(register.getLoginId())
@@ -67,7 +72,7 @@ public class UserService {
                 .name(register.getName())
                 .describe(" ")
                 .phoneNumber(register.getPhoneNumber())
-                .profileImageUrl(defProfileImage)
+                .profileImageUrl(profileImage)
                 .state(UserState.ACTIVE)
                 .userRole(UserRole.GENERAL)
                 .build();
@@ -254,7 +259,11 @@ public class UserService {
 
     @Transactional
     public User findByNickname(String nickname) {
-        return userRepository.findByNickname(nickname).get();
+        Optional<User> optionalUser = userRepository.findByNickname(nickname);
+        if(optionalUser.isEmpty()){
+            return null;
+        }
+        return optionalUser.get();
     }
 
     protected List<UserResponse> toUserResponse(List<User> users) {
