@@ -81,7 +81,7 @@ public class ChatRoomService {
             }
         }
 
-        ChatRoomType chatRoomType = type.equals("open") ? ChatRoomType.OPEN : ChatRoomType.GENERAL;
+        ChatRoomType chatRoomType = type.equals("open") ? ChatRoomType.OPEN : type.equals("general")? ChatRoomType.GENERAL : ChatRoomType.PRIVATE;
         ChatRoom chatRoom = ChatRoom.builder()
                 .roomName(roomName)
                 .userCount(nicknames.length + 1)
@@ -127,6 +127,7 @@ public class ChatRoomService {
         }
 
         if(type.equals("open")) createMessage = user.getNickname() + "님이 오픈채팅방을 생성하셨습니다.";
+        if(type.equals("private")) createMessage = user.getNickname() + "님이 비밀채팅방을 생성하셨습니다.";
         Message message = Message.builder().type(MessageType.INVITE).message(createMessage).roomId(chatRoom.getChatRoomId()).senderName(user.getNickname()).build();
         messageService.join(message);
         template.convertAndSend("/queue/chatroom/list/" + user.getNickname(), toResponseChatRoom(chatRoom));
