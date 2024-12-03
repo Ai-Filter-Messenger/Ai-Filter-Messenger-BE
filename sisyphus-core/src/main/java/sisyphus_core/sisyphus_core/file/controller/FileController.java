@@ -39,4 +39,9 @@ public class FileController {
         fileService.deleteFile(fileUrl);
         return ResponseEntity.ok("파일이 삭제되었습니다");
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<UploadFileResponse>> findAllFiles() {
+        return ResponseEntity.ok().body(fileService.findAll());
+    }
 }
