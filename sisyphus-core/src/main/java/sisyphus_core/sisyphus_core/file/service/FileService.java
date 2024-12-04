@@ -141,7 +141,20 @@ public class FileService {
                 .build();
     }
 
-    //채팅방 이미지 변경
+
+    // 모든 유저의 파일 조회
+    @Transactional(readOnly = true)
+    public List<UploadFileResponse> findAll() {
+        List<UploadFile> files = fileRepository.findAll(); // 모든 파일 가져오기
+        return toResponse(files); // DTO 변환
+    }
+
+//    @Transactional(readOnly = true)
+//    public List<UploadFileResponse> findAllSorted() {
+//        List<UploadFile> files = fileRepository.findAll(Sort.by(Sort.Direction.DESC, "createAt")); // 정렬된 파일
+//        return toResponse(files);
+//    }
+
     @Transactional
     public String uploadAtChatRoom(MultipartFile file){
         Map<String, Object> fileInfo = uploadFile(file);
