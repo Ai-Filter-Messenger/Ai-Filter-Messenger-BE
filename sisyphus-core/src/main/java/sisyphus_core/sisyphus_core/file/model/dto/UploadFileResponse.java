@@ -15,4 +15,14 @@ public class UploadFileResponse {
     private ZonedDateTime createAt;
     private boolean isReported;
     private Long fileSize;
+
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Getter
+    @Setter
+    public static class SuccessResponse {
+        private String fileUrl;
+        private boolean isSuccess;
+    }
 }

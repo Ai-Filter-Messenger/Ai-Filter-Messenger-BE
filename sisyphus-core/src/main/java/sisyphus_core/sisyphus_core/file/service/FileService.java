@@ -5,11 +5,16 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import sisyphus_core.sisyphus_core.auth.model.User;
 import sisyphus_core.sisyphus_core.auth.repository.UserRepository;
@@ -27,10 +32,12 @@ import sisyphus_core.sisyphus_core.file.repository.FileRepository;
 
 import java.io.File;
 import java.io.IOException;
+import org.springframework.http.HttpHeaders;
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileService {
 
     private final AmazonS3Client amazonS3Client;
@@ -47,24 +54,36 @@ public class FileService {
     @Value("${file.storage.path}")
     private String fileStoragePath;
 
+    private Long sequence = 1L;
+
+    //파일 업로드
     @Transactional
-    public String upload(List<MultipartFile> files, Long roomId, String loginId){
+    public UploadFileResponse.SuccessResponse upload(List<MultipartFile> files, Long roomId, String loginId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
         List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
         String fileUrl = "";
         StringBuilder fileUrls = new StringBuilder();
+        boolean isNotContainReportedFile = true;
         for (MultipartFile file : files) {
             Map<String, Object> fileInfo = uploadFile(file);
             fileUrl = (String) fileInfo.get("fileUrl");
             Long fileSize = (Long) fileInfo.get("fileSize");
+
+            //파일 검증 요청
+            boolean isReported = false;
+            if(!validFileRequest(fileUrl)){
+                isReported = true;
+                isNotContainReportedFile = false;
+            }
+
             fileUrls.append(fileUrl).append(",");
             UploadFile uploadFile = UploadFile.builder()
                     .nickname(user.getNickname())
                     .fileUrl(fileUrl)
                     .fileSize(fileSize)
                     .chatRoomId(roomId)
-                    .isReported(false)
+                    .isReported(isReported)
                     .build();
             fileRepository.save(uploadFile);
         }
@@ -80,8 +99,48 @@ public class FileService {
             template.convertAndSend("/queue/chatroom/" + userChatRoom.getUser().getNickname(), message);
         }
 
-        return fileUrl;
+        return toFileState(fileUrl, isNotContainReportedFile);
     }
+
+    //유효한 파일 검증
+    public boolean validFileRequest(String fileUrl){
+        RestTemplate restTemplate = new RestTemplate();
+        String image_id = String.valueOf(sequence++);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, String> requestBody = Map.of(
+                "image_id", image_id,
+                "image_url", fileUrl
+        );
+
+        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+
+        try{
+            ResponseEntity<Map> response = restTemplate.postForEntity("https://jygwagmi.shop/app/images",
+                    requestEntity, Map.class);
+
+            Map<String, Object> responseBody = response.getBody();
+            Map<String, Object> signUpResponse = (Map<String, Object>) responseBody.get("signUpResponse");
+            boolean isSuccess = (Boolean) signUpResponse.get("isSuccess");
+
+            if(!isSuccess) return false;
+        }catch(Exception e){
+            throw new RuntimeException("파일 검증 실패", e);
+        }
+
+        return true;
+    }
+
+    //파일리스폰스로 변환
+    public UploadFileResponse.SuccessResponse toFileState (String fileUrl, boolean isNotContainReportedFile){
+        return UploadFileResponse.SuccessResponse.builder()
+                .fileUrl(fileUrl)
+                .isSuccess(isNotContainReportedFile)
+                .build();
+    }
+
 
     // 모든 유저의 파일 조회
     @Transactional(readOnly = true)
@@ -102,18 +161,21 @@ public class FileService {
         return (String) fileInfo.get("fileUrl");
     }
 
+    //유저의 파일 목록조회
     @Transactional
     public List<UploadFileResponse> findByUser(String loginId){
         User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
         return toResponse(fileRepository.findByNickname(user.getNickname()));
     }
 
+    //채팅방별 파일 목록조회
     @Transactional
     public List<UploadFileResponse> findByChatRoom(Long chatRoomId){
         List<UploadFile> byChatRoomId = fileRepository.findByChatRoomId(chatRoomId);
         return toResponse(byChatRoomId);
     }
 
+    //s3 파일 업로드
     public Map<String, Object> uploadFile(MultipartFile file) {
 
         UUID uuid = UUID.randomUUID();
@@ -150,6 +212,7 @@ public class FileService {
         return response;
     }
 
+    //파일 삭제
     @Transactional
     public void deleteFile(String fileUrl){
         String fileName = fileUrl.substring(fileUrl.lastIndexOf("/")+1);

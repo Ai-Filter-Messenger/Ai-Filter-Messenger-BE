@@ -75,12 +75,21 @@ public class SisyphusCoreApplication {
 				.type("open")
 				.build();
 
+		String[] nicknames3 = new String[]{"test2"};
+		ChatRoomRequest.register chatRegister3 = ChatRoomRequest.register.builder()
+				.roomName("채팅방3번")
+				.chatRoomImage("")
+				.nicknames(nicknames3)
+				.type("private")
+				.build();
+
 		userService.register(register1);
 		userService.register(register2);
 		userService.register(register3);
 		userService.register(register4);
 		chatRoomService.createChatRoom(chatRegister, null,"test1");
 		chatRoomService.createChatRoom(chatRegister2, null,"test1");
+		chatRoomService.createChatRoom(chatRegister3, null,"test1");
 	}
 
 }
