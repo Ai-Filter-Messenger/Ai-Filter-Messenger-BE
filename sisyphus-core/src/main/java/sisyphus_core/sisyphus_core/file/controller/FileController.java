@@ -18,7 +18,7 @@ public class FileController {
     private final FileService fileService;
 
     @PostMapping("/upload")
-    public ResponseEntity<String> upload(@RequestPart("files")List<MultipartFile> files,
+    public ResponseEntity<UploadFileResponse.SuccessResponse> upload(@RequestPart("files")List<MultipartFile> files,
                                          @RequestParam("roomId") Long roomId,
                                          Authentication auth){
         return ResponseEntity.ok().body(fileService.upload(files, roomId, auth.getName()));
