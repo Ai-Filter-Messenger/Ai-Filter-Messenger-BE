@@ -20,6 +20,7 @@ public class UserRequest {
         private String describe;
         private String profileImageUrl;
         private String phoneNumber;
+        private String userRole;
     }
 
     @Getter
