@@ -59,6 +59,16 @@ public class SisyphusCoreApplication {
 				.phoneNumber("010-4444-4444")
 				.build();
 
+		UserRequest.register register5= UserRequest.register.builder()
+				.loginId("admin")
+				.password("1234")
+				.nickname("admin")
+				.email("admin@admin.com")
+				.name("admin")
+				.phoneNumber("010-5555-5555")
+				.userRole("admin")
+				.build();
+
 		String[] nicknames = new String[]{"test2"};
 		ChatRoomRequest.register chatRegister = ChatRoomRequest.register.builder()
 						.roomName("채팅방1번")
@@ -87,6 +97,7 @@ public class SisyphusCoreApplication {
 		userService.register(register2);
 		userService.register(register3);
 		userService.register(register4);
+		userService.register(register5);
 		chatRoomService.createChatRoom(chatRegister, null,"test1");
 		chatRoomService.createChatRoom(chatRegister2, null,"test1");
 		chatRoomService.createChatRoom(chatRegister3, null,"test1");

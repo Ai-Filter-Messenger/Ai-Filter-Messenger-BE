@@ -63,7 +63,8 @@ public class UserService {
         if(register.getProfileImageUrl() == null){
             profileImage = defProfileImage;
         }
-
+        UserRole role = UserRole.ADMIN;
+        if(register.getUserRole() == null) role = UserRole.GENERAL;
         User user = User.builder()
                 .loginId(register.getLoginId())
                 .password(register.getPassword())
@@ -74,7 +75,7 @@ public class UserService {
                 .phoneNumber(register.getPhoneNumber())
                 .profileImageUrl(profileImage)
                 .state(UserState.ACTIVE)
-                .userRole(UserRole.GENERAL)
+                .userRole(role)
                 .build();
 
         userRepository.save(user);
