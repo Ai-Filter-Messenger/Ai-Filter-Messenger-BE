@@ -117,20 +117,21 @@ public class FileService {
 
         HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
 
-        try{
+        try {
             ResponseEntity<Map> response = restTemplate.postForEntity("https://jygwagmi.shop/app/images",
                     requestEntity, Map.class);
 
             Map<String, Object> responseBody = response.getBody();
-            Map<String, Object> signUpResponse = (Map<String, Object>) responseBody.get("signUpResponse");
-            boolean isSuccess = (Boolean) signUpResponse.get("isSuccess");
+            if (responseBody == null || !responseBody.containsKey("result")) {
+                throw new RuntimeException("파일 검증 응답이 올바르지 않습니다.");
+            }
 
-            if(!isSuccess) return false;
-        }catch(Exception e){
+            // result 값으로 검증 상태 판단
+            double resultValue = Double.parseDouble(responseBody.get("result").toString());
+            return resultValue < 2.0; // 2.33 미만이면 검증 통과 (isReported == false)
+        } catch (Exception e) {
             throw new RuntimeException("파일 검증 실패", e);
         }
-
-        return true;
     }
 
     //파일리스폰스로 변환
