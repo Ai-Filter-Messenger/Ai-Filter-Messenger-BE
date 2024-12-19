@@ -24,5 +24,6 @@ public class UploadFileResponse {
     public static class SuccessResponse {
         private String fileUrl;
         private boolean isSuccess;
+        private String message;
     }
 }

@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import org.springframework.http.HttpHeaders;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @RequiredArgsConstructor
@@ -56,28 +57,37 @@ public class FileService {
 
     private Long sequence = 1L;
 
+    // AtomicLong을 사용하여 고유 ID 생성
+    private final AtomicLong idGenerator = new AtomicLong(1);
+
     //파일 업로드
     @Transactional
-    public UploadFileResponse.SuccessResponse upload(List<MultipartFile> files, Long roomId, String loginId){
-        User user = userRepository.findByLoginId(loginId).orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
-        ChatRoom chatRoom = chatRoomRepository.findById(roomId).orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
+    public UploadFileResponse.SuccessResponse upload(List<MultipartFile> files, Long roomId, String loginId) {
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new UsernameNotFoundException("일치하는 유저가 없습니다."));
+        ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new ChatRoomNotFoundException("일치하는 채팅방이 없습니다."));
         List<UserChatRoom> userChatRoomsByChatRoom = userChatRoomRepository.findUserChatRoomsByChatRoom(chatRoom);
-        String fileUrl = "";
-        StringBuilder fileUrls = new StringBuilder();
+
+        StringBuilder validFileUrls = new StringBuilder();
         boolean isNotContainReportedFile = true;
+
         for (MultipartFile file : files) {
             Map<String, Object> fileInfo = uploadFile(file);
-            fileUrl = (String) fileInfo.get("fileUrl");
+            String fileUrl = (String) fileInfo.get("fileUrl");
             Long fileSize = (Long) fileInfo.get("fileSize");
 
-            //파일 검증 요청
-            boolean isReported = false;
-            if(!validFileRequest(fileUrl)){
-                isReported = true;
+            // image_id 생성 (고유 정수)
+            int imageId = generateImageId();
+
+            // 파일 검증 요청
+            boolean isReported = !validFileRequest(fileUrl, imageId);
+            if (isReported) {
                 isNotContainReportedFile = false;
+                log.warn("불법 파일로 검출됨: {}", fileUrl);
             }
 
-            fileUrls.append(fileUrl).append(",");
+            // 모든 파일 저장 (불법 여부와 관계없이)
             UploadFile uploadFile = UploadFile.builder()
                     .nickname(user.getNickname())
                     .fileUrl(fileUrl)
@@ -86,59 +96,89 @@ public class FileService {
                     .isReported(isReported)
                     .build();
             fileRepository.save(uploadFile);
+
+            // 유효한 파일만 사용자에게 반환할 URL에 포함
+            if (!isReported) {
+                validFileUrls.append(fileUrl).append(",");
+            }
         }
 
-        if (fileUrls.length() > 0) {
-            fileUrls.setLength(fileUrls.length() - 1);
+        // 메시지 전송 및 반환 URL 조정
+        if (validFileUrls.length() > 0) {
+            validFileUrls.setLength(validFileUrls.length() - 1); // 마지막 쉼표 제거
+            Message message = Message.builder()
+                    .message(validFileUrls.toString())
+                    .roomId(roomId)
+                    .type(MessageType.FILE)
+                    .senderName(user.getNickname())
+                    .build();
+
+            kafkaProducerService.sendMessage(message);
+            template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
+            for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
+                template.convertAndSend("/queue/chatroom/" + userChatRoom.getUser().getNickname(), message);
+            }
         }
 
-        Message message = Message.builder().message(fileUrls.toString()).roomId(roomId).type(MessageType.FILE).senderName(user.getNickname()).build();
-        kafkaProducerService.sendMessage(message);
-        template.convertAndSend("/topic/chatroom/" + message.getRoomId(), message);
-        for (UserChatRoom userChatRoom : userChatRoomsByChatRoom) {
-            template.convertAndSend("/queue/chatroom/" + userChatRoom.getUser().getNickname(), message);
-        }
-
-        return toFileState(fileUrl, isNotContainReportedFile);
+        return toFileState(validFileUrls.toString(), isNotContainReportedFile);
     }
 
-    //유효한 파일 검증
-    public boolean validFileRequest(String fileUrl){
+
+    // 고유 image_id 생성 메서드
+    private int generateImageId() {
+        return (int) idGenerator.getAndIncrement();
+    }
+
+    // 유효한 파일 검증
+    public boolean validFileRequest(String fileUrl, int imageId) {
         RestTemplate restTemplate = new RestTemplate();
-        String image_id = String.valueOf(sequence++);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        Map<String, String> requestBody = Map.of(
-                "image_id", image_id,
-                "image_url", fileUrl
+        Map<String, Object> requestBody = Map.of(
+                "image_url", fileUrl,
+                "image_id", imageId
         );
 
-        HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity("https://jygwagmi.shop/app/images",
-                    requestEntity, Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    "https://jygwagmi.shop/app/images",
+                    requestEntity,
+                    Map.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("AI 서버 응답 실패: 상태 코드 = {}", response.getStatusCode());
+                throw new RuntimeException("AI 서버와의 통신 실패");
+            }
 
             Map<String, Object> responseBody = response.getBody();
+            log.debug("AI 서버 응답: {}", responseBody);
+
             if (responseBody == null || !responseBody.containsKey("result")) {
+                log.error("AI 서버 응답 본문이 비어 있거나 'result' 필드가 없습니다. 응답 데이터: {}", responseBody);
                 throw new RuntimeException("파일 검증 응답이 올바르지 않습니다.");
             }
 
-            // result 값으로 검증 상태 판단
-            double resultValue = Double.parseDouble(responseBody.get("result").toString());
-            return resultValue < 2.0; // 2.33 미만이면 검증 통과 (isReported == false)
+            String resultValue = responseBody.get("result").toString();
+            log.debug("파일 검증 결과: {}", resultValue);
+
+            return !"fake_nsfw".equals(resultValue);
         } catch (Exception e) {
+            log.error("파일 검증 중 예외 발생: ", e);
             throw new RuntimeException("파일 검증 실패", e);
         }
     }
 
     //파일리스폰스로 변환
-    public UploadFileResponse.SuccessResponse toFileState (String fileUrl, boolean isNotContainReportedFile){
+    public UploadFileResponse.SuccessResponse toFileState(String fileUrl, boolean isNotContainReportedFile) {
         return UploadFileResponse.SuccessResponse.builder()
-                .fileUrl(fileUrl)
+                .fileUrl(fileUrl) // 정상 파일만 포함
                 .isSuccess(isNotContainReportedFile)
+                .message(isNotContainReportedFile ? "파일 업로드에 성공했습니다" : "불법 파일이 포함되었습니다")
                 .build();
     }
 
@@ -150,11 +190,6 @@ public class FileService {
         return toResponse(files); // DTO 변환
     }
 
-//    @Transactional(readOnly = true)
-//    public List<UploadFileResponse> findAllSorted() {
-//        List<UploadFile> files = fileRepository.findAll(Sort.by(Sort.Direction.DESC, "createAt")); // 정렬된 파일
-//        return toResponse(files);
-//    }
 
     @Transactional
     public String uploadAtChatRoom(MultipartFile file){
